@@ -424,13 +424,9 @@ async def add_message(message: discord.Message):
             if mentioned:
               await message.reply(phrase, mention_author=True)
             else:
-
               if random.choice([True, False]):
-
                 await message.reply(phrase, mention_author=False)
-
               else:
-
                 await message.channel.send(phrase)
         except:
           pass
@@ -1735,7 +1731,6 @@ async def on_guild_channel_delete(channel: discord.abc.GuildChannel):
 
 @bot.event
 async def on_guild_join(guild: discord.Guild):
-
   Lox = await bot.fetch_channel(1113025897419767818)
   embed = discord.Embed(title="Бот был добавлен на сервер", color=0x9aff35, description = f"Участников: {guild.member_count}\nID сервера: {guild.id}")
   user = None
@@ -1795,7 +1790,6 @@ class info_view(discord.ui.View):
     self.add_item(discord.ui.Button(style=discord.ButtonStyle.url, url="https://discord.com/oauth2/authorize?client_id=984046489934385152&scope=applications.commands%20bot&permissions=1099511627775", emoji='🔗', label='Добавить бота!'))
     self.add_item(discord.ui.Button(style=discord.ButtonStyle.url, url="https://qiwi.com/n/COMPOSTER", emoji='💸', label='Для сбора дани'))
     self.add_item(discord.ui.Button(style=discord.ButtonStyle.url, url='https://discord.gg/TWHa59yFAs', emoji='🛠️', label='Сервер поддержки'))
-
 
 def userss():
   cif = str(len(bot.users))
@@ -2189,7 +2183,6 @@ async def giveaway_list(interaction: discord.Interaction):
   if not results:
     return await interaction.response.send_message(embed=discord.Embed(title="Ошибка! ❌", description="На сервере нет активных розыгрышей!", color=0xff0000), ephemeral=True)
   await interaction.response.send_message(embed=discord.Embed(title="Список розыгрышей", color=0x69FF00, description="\n\n".join([f'Розыгрыш с призом **{giveaway[4]}** и ID сообщения [{giveaway[2]}](https://discord.com/channels/{giveaway[1]}/{giveaway[0]}/{giveaway[2]})' for giveaway in results])))
-
 
 @bot.tree.command(name="токен", description="Показывает начало токена участника")
 @app_commands.describe(member='Выберите участника')
