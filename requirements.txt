@@ -1,0 +1,8 @@
+datetime
+Faker
+russian-names
+ipaddress
+psycopg2
+git+https://github.com/Rapptz/discord.py#egg=discord.py[speed]
+mc.py
+requests
