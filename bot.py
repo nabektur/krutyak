@@ -465,23 +465,17 @@ async def on_message(message: discord.Message):
           except:
             pass
       if message.author.bot:
-
         return
-      cur.execute("SELECT channel_id FROM channels_reply WHERE channel_id = %s", (str(message.channel.id),))
-
-      if cur.fetchone():
-
-        if not message.content.lower().startswith(('$', '&', '%', '€', '¥', '!', '.', '?', '+', '=', '~', '-', '_', 's?', 'L.', 'cp!', 'g.', 'g?', 'pls', ';', "'", 'NQN')):
-
-          await add_message(message) 
-
       if message.content == bot.user.mention:
         try:
           await message.reply("Введи </хелп:1076840237860397106> для справки о командах!")
         except:
-          await message.channel.send("Введи </хелп:1076840237860397106> для справки о командах!")
-        return
-   
+          pass
+        return 
+      cur.execute("SELECT channel_id FROM channels_reply WHERE channel_id = %s", (str(message.channel.id),))
+      if cur.fetchone():
+        if not message.content.lower().startswith(('$', '&', '%', '€', '¥', '!', '.', '?', '+', '=', '~', '-', '_', 's?', 'L.', 'cp!', 'g.', 'g?', 'pls', ';', "'", 'NQN')):
+          await add_message(message)
       if message.guild.id == 798687387096973322:
         if len(message.content) > 600 or len(message.content.splitlines()) > 15:
           if any(ir in [role.id for role in author.roles] for ir in [877286837167730688, 869275665013280840, 869534957238911016, 825705418910859282, 980163365357899786]):
@@ -1730,6 +1724,15 @@ async def on_guild_channel_delete(channel: discord.abc.GuildChannel):
 
 @bot.event
 async def on_guild_join(guild: discord.Guild):
+  uspeh = False
+  for channel in guild.text_channels:
+    if uspeh:
+      break
+    try:
+      await channel.send(embed=discord.Embed(color=0x42f593, title="Привет! 👋", description="Спасибо, что добавили меня на ваш сервер!\nЯ — крутой бот с кучей функций! Подробнее о командах — </хелп:1076840237860397106>\nЕсли возникнут вопросы, обращайтесь в наш [Telegram канал](https://t.me/+NZBbzqb2dew1YTli)!\nВсего доброго!"))
+      uspeh = True
+    except:
+      pass
   Lox = await bot.fetch_channel(1113025897419767818)
   embed = discord.Embed(title="Бот был добавлен на сервер", color=0x9aff35, description = f"Участников: {guild.member_count}\nID сервера: {guild.id}")
   user = None
