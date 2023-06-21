@@ -471,18 +471,14 @@ async def on_message(message: discord.Message):
           await message.reply("Введи </хелп:1076840237860397106> для справки о командах!")
         except:
           pass
-        return 
-      cur.execute("SELECT channel_id FROM channels_reply WHERE channel_id = %s", (str(message.channel.id),))
+        return
+      if message.channel.parent:
+        cur.execute("SELECT channel_id FROM channels_reply WHERE channel_id = %s", (str(message.channel.parent_id),))
+      else:
+        cur.execute("SELECT channel_id FROM channels_reply WHERE channel_id = %s", (str(message.channel.id),))
       if cur.fetchone():
         if not message.content.lower().startswith(('$', '&', '%', '€', '¥', '!', '.', '?', '+', '=', '~', '-', '_', 's?', 'L.', 'cp!', 'g.', 'g?', 'pls', ';', "'", 'NQN')):
           await add_message(message)
-      if message.guild.id == 798687387096973322:
-        if len(message.content) > 600 or len(message.content.splitlines()) > 15:
-          if any(ir in [role.id for role in author.roles] for ir in [877286837167730688, 869275665013280840, 869534957238911016, 825705418910859282, 980163365357899786]):
-            try:
-              await message.delete()
-            except:
-              pass  
       await bot.process_commands(message)
 
 @bot.event
@@ -1578,7 +1574,7 @@ async def guilds(ctx):
 @app_commands.guild_only
 @app_commands.default_permissions(manage_guild=True)
 @app_commands.describe(channel='Выберите канал для ответов', reply_chance='Введите вероятность ответа бота в % (без %)')
-async def set_channel(interaction: discord.Interaction, channel: discord.TextChannel=None, reply_chance: float=None):
+async def set_channel(interaction: discord.Interaction, channel: typing.Union[discord.TextChannel, discord.ForumChannel, discord.Thread, discord.VoiceChannel]=None, reply_chance: float=None):
   if not channel:
     channel = interaction.channel
   if channel.is_nsfw():
