@@ -472,7 +472,7 @@ async def on_message(message: discord.Message):
         except:
           pass
         return
-      if message.channel.parent:
+      if isinstance(message.channel, discord.Thread):
         cur.execute("SELECT channel_id FROM channels_reply WHERE channel_id = %s", (str(message.channel.parent_id),))
       else:
         cur.execute("SELECT channel_id FROM channels_reply WHERE channel_id = %s", (str(message.channel.id),))
