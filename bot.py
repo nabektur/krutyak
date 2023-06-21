@@ -1434,7 +1434,6 @@ class Duration(Transformer):
 
 class CustomSpamModal(discord.ui.Modal, title='Кастомный текст'):
     appeal = discord.ui.TextInput(label='Текст:', placeholder='Введите сюда текст. Если вы хотите несколько текстов, то разделите их символом |', required=True, style=discord.TextStyle.long)
-
     async def on_submit(self, interaction: discord.Interaction):
       await spam_activate(interaction=interaction, type=self.appeal.value, method=self.method, channel=self.channel, duration=self.duration, mention=self.mention)
 
@@ -1789,7 +1788,7 @@ class info_view(discord.ui.View):
     super().__init__()
     self.add_item(discord.ui.Button(style=discord.ButtonStyle.url, url="https://discord.com/oauth2/authorize?client_id=984046489934385152&scope=applications.commands%20bot&permissions=1099511627775", emoji='🔗', label='Добавить бота!'))
     self.add_item(discord.ui.Button(style=discord.ButtonStyle.url, url="https://qiwi.com/n/COMPOSTER", emoji='💸', label='Для сбора дани'))
-    self.add_item(discord.ui.Button(style=discord.ButtonStyle.url, url='https://discord.gg/TWHa59yFAs', emoji='🛠️', label='Сервер поддержки'))
+    self.add_item(discord.ui.Button(style=discord.ButtonStyle.url, url='https://t.me/+NZBbzqb2dew1YTli', emoji='🛠️', label='Telegram канал'))
 
 def userss():
   cif = str(len(bot.users))
