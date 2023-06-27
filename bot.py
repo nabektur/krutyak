@@ -2027,10 +2027,12 @@ async def userinfo(interaction: discord.Interaction, member: typing.Union[discor
   if not member:
     member = interaction.user
   ring = [f"Тэг: {member}", f"Создал аккаунт: <t:{int(member.created_at.timestamp())}:R>"]
+  if member.global_name:
+    ring.append(f"Глобальный никнейм: {member.global_name}")
   if isinstance(member, discord.Member):
     ring.append(f"Присоединился к серверу: <t:{int(member.joined_at.timestamp())}:R>")
     if member.nick:
-      ring.insert(1, f"Ник на сервере: {member.nick}")
+      ring.insert(1, f"Никнейм на сервере: {member.nick}")
     if member.premium_since:
       ring.append(f"Бустит сервер с <t:{int(member.premium_since.timestamp())}>")
     ring.append(f"Роли ({len(member.roles)}): {', '.join(list(reversed([role.mention if role != interaction.guild.default_role else '@everyone' for role in member.roles])))}")
