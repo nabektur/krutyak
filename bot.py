@@ -2036,6 +2036,8 @@ async def userinfo(interaction: discord.Interaction, member: typing.Union[discor
     ring.append(f"Роли ({len(member.roles)}): {', '.join(list(reversed([role.mention if role != interaction.guild.default_role else '@everyone' for role in member.roles])))}")
   if member.public_flags:
     flags = []
+    if member.public_flags.bot_http_interactions:
+      flags.append('Бот со слэш командами')
     if member.public_flags.active_developer:
       flags.append("`Активный разработчик`")
     if member.public_flags.bug_hunter:
