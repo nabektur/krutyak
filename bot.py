@@ -156,7 +156,7 @@ async def start_zh(key):
 
 @bot.event
 async def on_ready():
-  logs_channel = await bot.fetch_channel(1113025897419767818)
+  logs_channel = await bot.fetch_channel(1124730648008069130)
   bot.owner = await bot.fetch_user(724089206762373131)
   print(f'Бот вошёл в систему как:\n{bot.user.name} (ID: {bot.user.id})\n------')
   await logs_channel.send("Крутяк активирован! ✅")
@@ -360,7 +360,7 @@ async def on_command_error(ctx, error):
     except:
       pass
     return
-  Lox = await bot.fetch_channel(1113025897419767818)
+  Lox = await bot.fetch_channel(1124730648008069130)
   embed = discord.Embed(title=':x: Вызвана ошибка!', colour=0xe74c3c, description=f'**Ошибка**:```py\n{error}```', timestamp=datetime.now(timezone.utc))
   embed.add_field(name="Команда:", value=ctx.invoked_with)
   await Lox.send(embed=embed)
@@ -369,7 +369,7 @@ async def on_command_error(ctx, error):
 
 @bot.event
 async def on_error(event, *args, **kwargs):
-  Lox = await bot.fetch_channel(1113025897419767818)
+  Lox = await bot.fetch_channel(1124730648008069130)
   async with Lox.typing():
     embed = discord.Embed(title=':x: Ошибка в исполнении события!', colour=0xe74c3c, description=f'**Ошибка**:\n```py\n{traceback.format_exc()}\n```', timestamp=datetime.now(timezone.utc))
     embed.add_field(name='Событие:', value=event)
@@ -389,7 +389,7 @@ async def on_error(interaction: discord.Interaction, error: AppCommandError):
     return
   if isinstance(error, InvalidDuration):
     return
-  Lox = await bot.fetch_channel(1113025897419767818)
+  Lox = await bot.fetch_channel(1124730648008069130)
   embed = discord.Embed(title=':x: Вызвана ошибка!', color=0xe74c3c, timestamp=datetime.now(timezone.utc), description=f'**Ошибка**:\n```py\n{error}```')
   if interaction.command:
     embed.add_field(name="Слэш команда:", value=interaction.command.name)
@@ -398,7 +398,7 @@ async def on_error(interaction: discord.Interaction, error: AppCommandError):
     await bot.close()
 
 async def on_view_error(error: Exception, view: str, item: discord.ui.Item):
-  Lox = await bot.fetch_channel(1113025897419767818)
+  Lox = await bot.fetch_channel(1124730648008069130)
   embed = discord.Embed(title=f':x: Вызвана ошибка в View {view}!', color=0xe74c3c, timestamp=datetime.now(timezone.utc), description=f'**Ошибка**:\n```py\n{error}```').add_field(name="Предмет, вызвавший ошибку:", value=str(item))
   await Lox.send(embed=embed)
 
@@ -1684,7 +1684,7 @@ def db_remove(channel):
 
 @bot.event
 async def on_guild_remove(guild: discord.Guild):
-  Lox = await bot.fetch_channel(1113025897419767818)
+  Lox = await bot.fetch_channel(1124730648008069130)
   cur.execute("DELETE FROM giveaways WHERE guild_id = %s;", (str(guild.id),))
   con.commit()
   [db_remove(channel) for channel in guild.channels]
@@ -1729,7 +1729,7 @@ async def on_guild_join(guild: discord.Guild):
       uspeh = True
     except:
       pass
-  Lox = await bot.fetch_channel(1113025897419767818)
+  Lox = await bot.fetch_channel(1124730648008069130)
   embed = discord.Embed(title="Бот был добавлен на сервер", color=0x9aff35, description = f"Участников: {guild.member_count}\nID сервера: {guild.id}")
   user = None
   try:
