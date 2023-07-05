@@ -1819,9 +1819,6 @@ async def info_cmd(interaction: discord.Interaction):
   embed.add_field(name="Ссылки", value="[Политика конфиденциальности](https://docs.google.com/document/d/1dcsigKBWaju9-3L2VVOt7-zltu9-tNFE_dkaAcE8P7w)\n[Условия использования](https://docs.google.com/document/d/1qJAtNv4Skl5rh5epdahXzCeaDU5kwRwbg3CYqsU-esw)")
   await interaction.response.send_message(embed=embed, view=info_view())
 
-async def is_owner(self, user: discord.User, /) -> bool:
-  return user.id == 724089206762373131
-
 @bot.tree.command(name='логи', description='Включает/Выключает логи на сервере')
 @app_commands.guild_only
 @app_commands.default_permissions(manage_guild=True)
@@ -2196,6 +2193,5 @@ async def token_cmd(interaction: discord.Interaction, member: typing.Union[disco
 bot.tree.add_command(giveaways_group)
 bot.tree.add_command(spam_group)
 
-discord.ext.commands.bot.BotBase.is_owner = is_owner
 discord.gateway.DiscordWebSocket.identify = mobile
 bot.run(os.environ['TOKEN'], log_level=logging.ERROR)
