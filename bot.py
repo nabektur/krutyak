@@ -1812,7 +1812,7 @@ async def info_cmd(interaction: discord.Interaction):
   embed = discord.Embed(title="Информация о боте", color=0x4287f5, description=f"Shard {interaction.guild.shard_id + 1} / {bot.shard_count}")
   embed.add_field(name="Разработчик", value=f"Жутька#7403", inline=True)
   embed.add_field(name="Статистика", value=f"{serverss()}\n{userss()}\n{frazess()}", inline=True)
-  embed.add_field(name="Программные характеристики", value=f"ОС: [Linux](https://www.linux.org/)\nВерсия [Python](https://www.python.org/): {platform.python_version()}\nВерсия [discord.py](https://discordpy.readthedocs.io/en/stable/intro.html#installing): {discord.__version__}\nХостинг: [Railway](https://railway.app/)", inline=True)
+  embed.add_field(name="Программные характеристики", value=f"ОС: [Linux](https://www.linux.org/)\nХостинг: [Railway](https://railway.app/)\nВерсия [Python](https://www.python.org/): {platform.python_version()}\nВерсия [discord.py](https://discordpy.readthedocs.io/en/stable/intro.html#installing): {discord.__version__}", inline=True)
   embed.add_field(name="Предыстория", value="*Повествование ведётся от имени разработчика*\nУвидел я на сервере Failure Project бота с функцией публикации ембедов, потом сделал такого же и осваивал питон, затем понял, что бот говно нефункциональное и удалил его, затем создал этого. Потом я удалил Крутяка и пересоздал его, ибо бот не был рассчитан на широкие массы", inline=False)
   embed.add_field(name="Ссылки", value="[Политика конфиденциальности](https://docs.google.com/document/d/1dcsigKBWaju9-3L2VVOt7-zltu9-tNFE_dkaAcE8P7w)\n[Условия использования](https://docs.google.com/document/d/1qJAtNv4Skl5rh5epdahXzCeaDU5kwRwbg3CYqsU-esw)")
   await interaction.response.send_message(embed=embed, view=info_view())
