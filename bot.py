@@ -12,9 +12,7 @@ from io import BytesIO
 from mc.builtin.formatters import usual_syntax
 from discord.app_commands import Choice
 
-intents = discord.Intents.default()
-intents.members = True
-intents.message_content = True
+intents = discord.Intents.all()
 bot = commands.AutoShardedBot(command_prefix='.', case_insensitive=True, help_command=None, intents=intents)
 bot.cd_mapping = commands.CooldownMapping.from_cooldown(10, 10, commands.BucketType.member)
 snipes = {}
