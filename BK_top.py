@@ -11,7 +11,7 @@ text = '''@everyone @here
 
 # Но если в вас проснулся нормальный человек и вы поняли, что вы до этого были ничтожествами, то присоединяйтесь к нам!
 
-https://discord.gg/PA9Zn62gR4
+# https://discord.gg/PA9Zn62gR4
 
 https://media.discordapp.net/attachments/1076873966586691604/1076876167178625094/SPOILER_Do_you_want_total_war_.mp4
 https://cdn.discordapp.com/attachments/965150497508061226/1076207606655352892/VID_20230218_002408_628.mp4
