@@ -22,6 +22,7 @@ async def on_ready():
   for guild in bot.guilds:
     if guild.id != 1117488283090423930:
       await guild.leave()
+  await bot.tree.sync(guild=None)
   channel = await bot.fetch_channel(1128350420264292463)
   await channel.send(content="Я вернулся, скулите нацыки 24/7 🤣")
 
