@@ -1347,7 +1347,10 @@ def check_sp(channel_id):
 async def spamt(type, method, channel, webhook, ments=None, duration=None):
   if type == "default":
     if isinstance(channel, discord.TextChannel) or isinstance(channel, discord.VoiceChannel):
-      stexts = stexts_nsfw if channel.is_nsfw() else stexts = stexts_ordinary
+      if channel.is_nsfw():
+        stexts = stexts_nsfw
+      else:
+        stexts = stexts_ordinary
     else:
       stexts = stexts_ordinary
   else:
