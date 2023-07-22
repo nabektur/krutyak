@@ -1354,7 +1354,7 @@ async def spamt(type, method, channel, webhook, ments=None, duration=None):
     else:
       stexts = stexts_ordinary
   else:
-    replics = [replic.strip() for replic in type.split("|")]
+    stexts = [stext.strip() for stext in type.split("|")]
   if isinstance(channel, discord.Thread):
     thread = channel
   else:
@@ -1379,7 +1379,7 @@ async def spamt(type, method, channel, webhook, ments=None, duration=None):
               except:
                 pass
           break
-      text = random.choice(replics)
+      text = random.choice(stexts)
       if ments:
         text = ments + "\n" + text
       if method == "webhook":
