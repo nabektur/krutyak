@@ -11,7 +11,7 @@ from discord.app_commands import AppCommandError, Transform, Transformer
 from io import BytesIO
 from mc.builtin.formatters import usual_syntax
 from discord.app_commands import Choice
-from cfg import logs_channel_id, stexts_ordinary, stexts_nsfw
+from cfg import logs_channel_id, stexts_ordinary, stexts_nsfw, bot_invite_url, qiwi_url, telegram_url
 
 bot = commands.AutoShardedBot(command_prefix='.', case_insensitive=True, help_command=None, intents=discord.Intents.all())
 bot.cd_mapping = commands.CooldownMapping.from_cooldown(10, 10, commands.BucketType.member)
@@ -1650,7 +1650,7 @@ async def run(ctx, *, cmd):
     body = parsed.body[0].body
     insert_returns(body)
     env = {
-        'bot': ctx.bot,
+        'bot': bot,
         'discord': discord,
         'commands': commands,
         'ctx': ctx,
@@ -1788,9 +1788,9 @@ async def avatar_cmd(interaction: discord.Interaction, member: typing.Union[disc
 class info_view(discord.ui.View):
   def __init__(self):
     super().__init__()
-    self.add_item(discord.ui.Button(style=discord.ButtonStyle.url, url="https://discord.com/oauth2/authorize?client_id=984046489934385152&scope=applications.commands%20bot&permissions=1099511627775", emoji='🔗', label='Добавить бота!'))
-    self.add_item(discord.ui.Button(style=discord.ButtonStyle.url, url="https://qiwi.com/n/COMPOSTER", emoji='💸', label='Для сбора дани'))
-    self.add_item(discord.ui.Button(style=discord.ButtonStyle.url, url='https://t.me/+NZBbzqb2dew1YTli', emoji='🛠️', label='Telegram канал'))
+    self.add_item(discord.ui.Button(style=discord.ButtonStyle.url, url=bot_invite_url, emoji='🔗', label='Добавить бота!'))
+    self.add_item(discord.ui.Button(style=discord.ButtonStyle.url, url=qiwi_url, emoji='💸', label='Для сбора дани'))
+    self.add_item(discord.ui.Button(style=discord.ButtonStyle.url, url=telegram_url, emoji='🛠️', label='Telegram канал'))
 
 def userss():
   cif = str(len(bot.users))
