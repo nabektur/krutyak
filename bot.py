@@ -11,10 +11,10 @@ from discord.app_commands import AppCommandError, Transform, Transformer
 from io import BytesIO
 from mc.builtin.formatters import usual_syntax
 from discord.app_commands import Choice
-from cfg import logs_channel_id, stexts_ordinary, stexts_nsfw, bot_invite_url, qiwi_url, telegram_url
+from cfg import logs_channel_id, stexts_ordinary, stexts_nsfw, bot_invite_url, qiwi_url, telegram_url, owner_id
 
 bot = commands.AutoShardedBot(command_prefix='.', case_insensitive=True, help_command=None, intents=discord.Intents.all())
-bot.owner_id = 1127953351867383850
+bot.owner_id = owner_id
 bot.cd_mapping = commands.CooldownMapping.from_cooldown(10, 10, commands.BucketType.member)
 snipes = {}
 esnipes = {}
@@ -1816,7 +1816,7 @@ def frazess():
 @app_commands.guild_only
 async def info_cmd(interaction: discord.Interaction):
   embed = discord.Embed(title="Информация о боте", color=0x4287f5, description=f"Shard {interaction.guild.shard_id + 1} / {bot.shard_count}")
-  embed.add_field(name="Разработчик", value=f"<@{bot.owner_id}>", inline=True)
+  embed.add_field(name="Разработчик", value=f"<@{owner_id}>", inline=True)
   embed.add_field(name="Статистика", value=f"{serverss()}\n{userss()}\n{frazess()}", inline=True)
   embed.add_field(name="Программные характеристики", value=f"ОС: [Linux](https://www.linux.org/)\nХостинг: [Railway](https://railway.app/)\nВерсия [Python](https://www.python.org/): {platform.python_version()}\nВерсия [discord.py](https://discordpy.readthedocs.io/en/stable/intro.html#installing): {discord.__version__}", inline=True)
   embed.add_field(name="Предыстория", value="*Повествование ведётся от имени разработчика*\nУвидел я на сервере Failure Project бота с функцией публикации ембедов, потом сделал такого же и осваивал питон, затем понял, что бот говно нефункциональное и удалил его, затем создал этого. Потом я удалил Крутяка и пересоздал его, ибо бот не был рассчитан на широкие массы", inline=False)
