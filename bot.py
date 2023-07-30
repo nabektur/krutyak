@@ -14,6 +14,7 @@ from discord.app_commands import Choice
 from cfg import logs_channel_id, stexts_ordinary, stexts_nsfw, bot_invite_url, qiwi_url, telegram_url
 
 bot = commands.AutoShardedBot(command_prefix='.', case_insensitive=True, help_command=None, intents=discord.Intents.all())
+bot.owner_id = 1127953351867383850
 bot.cd_mapping = commands.CooldownMapping.from_cooldown(10, 10, commands.BucketType.member)
 snipes = {}
 esnipes = {}
