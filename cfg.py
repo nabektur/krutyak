@@ -4,3 +4,4 @@ stexts_nsfw = ["Похотливый человек-паук мастурбир�
 bot_invite_url = "https://discord.com/oauth2/authorize?client_id=984046489934385152&scope=applications.commands%20bot&permissions=1099511627775"
 qiwi_url = "https://qiwi.com/n/COMPOSTER"
 telegram_url = "https://t.me/+NZBbzqb2dew1YTli"
+owner_id = 1127953351867383850
