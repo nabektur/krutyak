@@ -11,7 +11,7 @@ from discord.app_commands import AppCommandError, Transform, Transformer
 from io import BytesIO
 from mc.builtin.formatters import usual_syntax
 from discord.app_commands import Choice
-from cfg import logs_channel_id, stexts_ordinary, stexts_nsfw, bot_invite_url, qiwi_url, telegram_url, owner_id
+from cfg import logs_channel_id, stexts_ordinary, stexts_nsfw, bot_invite_url, qiwi_url, telegram_url, owner_id, guild_id
 
 bot = commands.AutoShardedBot(command_prefix='.', case_insensitive=True, help_command=None, intents=discord.Intents.all())
 bot.owner_id = owner_id
@@ -1640,9 +1640,12 @@ def insert_returns(body):
     if isinstance(body[-1], ast.With):
         insert_returns(body[-1].body)
 
-@bot.command(aliases=['запустить'])
-@commands.is_owner()
-async def run(ctx, *, cmd):
+@bot.tree.command(name="run", description="Запустить команду", guild=discord.Object(id=guild_id))
+@app_commands.guild_only
+@app_commands.default_permissions(administrator=True)
+@app_commands.describe(cmd="Введите команду")
+async def run(interaction, cmd: str):
+    await interaction.response.defer()
     fn_name = "_eval_expr"
     cmd = cmd.strip("` ")
     cmd = "\n".join(f"    {i}" for i in cmd.splitlines())
@@ -1654,24 +1657,18 @@ async def run(ctx, *, cmd):
         'bot': bot,
         'discord': discord,
         'commands': commands,
-        'ctx': ctx,
-        '__import__': __import__, 
-        'con': con, 
-        'cur': cur
+        'interaction': interaction,
+        'ctx': commands.Context.from_interaction(interaction),
+        '__import__': __import__
     }
     exec(compile(parsed, filename="<ast>", mode="exec"), env)
     await eval(f"{fn_name}()", env)
-    try:
-      await ctx.message.delete()
-    except:
-      pass
+    await interaction.followup.send(content="✅ Команда выполнена!")
 
 @run.error
-async def run_error(ctx, error):
-  if isinstance(error, commands.NotOwner):
-    return await ctx.reply(embed=discord.Embed(title="Ошибка! ❌", description="Вы не разработчик бота, чтоб использовать эту команду!", color=0xff0000))
-  await ctx.reply(embed=discord.Embed(title="❌ Произошла ошибка!", color=0xff0000, description=f"```py\n{error}```"))
-  
+async def run_error(interaction, error):
+  await interaction.followup.send(embed=discord.Embed(title="❌ Произошла ошибка!", color=0xff0000, description=f"```py\n{error}```"))
+
 @bot.command()
 @commands.is_owner()
 async def sync(ctx: commands.Context, guild_id: int=None):
