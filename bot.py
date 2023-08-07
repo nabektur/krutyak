@@ -1658,7 +1658,7 @@ async def run(interaction, cmd: str):
         'discord': discord,
         'commands': commands,
         'interaction': interaction,
-        'ctx': commands.Context.from_interaction(interaction),
+        'ctx': await commands.Context.from_interaction(interaction),
         '__import__': __import__
     }
     exec(compile(parsed, filename="<ast>", mode="exec"), env)
