@@ -1662,7 +1662,7 @@ async def run(ctx, *, cmd: str):
     await ctx.reply(content="✅ Команда выполнена!")
 
 @run.error
-async def run_error(interaction, error):
+async def run_error(ctx, error):
   await ctx.reply(embed=discord.Embed(title="❌ Произошла ошибка!", color=0xff0000, description=f"```py\n{error}```"))
 
 @bot.command()
