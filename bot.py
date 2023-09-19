@@ -1640,12 +1640,9 @@ def insert_returns(body):
     if isinstance(body[-1], ast.With):
         insert_returns(body[-1].body)
 
-@bot.tree.command(name="run", description="Запустить команду", guild=discord.Object(id=guild_id))
-@app_commands.guild_only
-@app_commands.default_permissions(administrator=True)
-@app_commands.describe(cmd="Введите команду")
-async def run(interaction, cmd: str):
-    await interaction.response.defer()
+@bot.command(name="run", description="Запустить команду", guild=discord.Object(id=guild_id))
+@commands.is_owner()
+async def run(ctx, *, cmd: str):
     fn_name = "_eval_expr"
     cmd = cmd.strip("` ")
     cmd = "\n".join(f"    {i}" for i in cmd.splitlines())
@@ -1657,17 +1654,16 @@ async def run(interaction, cmd: str):
         'bot': bot,
         'discord': discord,
         'commands': commands,
-        'interaction': interaction,
-        'ctx': await commands.Context.from_interaction(interaction),
+        'ctx': ctx,
         '__import__': __import__
     }
     exec(compile(parsed, filename="<ast>", mode="exec"), env)
     await eval(f"{fn_name}()", env)
-    await interaction.followup.send(content="✅ Команда выполнена!")
+    await ctx.reply(content="✅ Команда выполнена!")
 
 @run.error
 async def run_error(interaction, error):
-  await interaction.followup.send(embed=discord.Embed(title="❌ Произошла ошибка!", color=0xff0000, description=f"```py\n{error}```"))
+  await ctx.reply(embed=discord.Embed(title="❌ Произошла ошибка!", color=0xff0000, description=f"```py\n{error}```"))
 
 @bot.command()
 @commands.is_owner()
