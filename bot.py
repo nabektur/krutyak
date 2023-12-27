@@ -11,7 +11,7 @@ from discord.app_commands import AppCommandError, Transform, Transformer
 from io import BytesIO
 from mc.builtin.formatters import usual_syntax
 from discord.app_commands import Choice
-from cfg import logs_channel_id, stexts_ordinary, stexts_nsfw, bot_invite_url, qiwi_url, telegram_url, owner_id, guild_id
+from cfg import logs_channel_id, stexts_ordinary, stexts_nsfw, bot_invite_url, owner_id, guild_id, discord_url
 
 bot = commands.AutoShardedBot(command_prefix='.', case_insensitive=True, help_command=None, intents=discord.Intents.all())
 bot.owner_id = owner_id
@@ -1783,8 +1783,7 @@ class info_view(discord.ui.View):
   def __init__(self):
     super().__init__()
     self.add_item(discord.ui.Button(style=discord.ButtonStyle.url, url=bot_invite_url, emoji='🔗', label='Добавить бота!'))
-    self.add_item(discord.ui.Button(style=discord.ButtonStyle.url, url=qiwi_url, emoji='💸', label='Для сбора дани'))
-    self.add_item(discord.ui.Button(style=discord.ButtonStyle.url, url=telegram_url, emoji='🛠️', label='Telegram канал'))
+    self.add_item(discord.ui.Button(style=discord.ButtonStyle.url, url=discord_url, emoji='🛠️', label='Discord сервер'))
 
 def userss():
   cif = str(len(bot.users))
