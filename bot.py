@@ -728,6 +728,7 @@ async def esnipe(interaction: discord.Interaction, channel: typing.Union[discord
   view.channel_id = channel.id
   view.author_id = interaction.user.id
   await interaction.response.send_message(view=view, embed=discord.Embed(description=f"**До изменения:**\n{before.content}\n**После:**\n{after.content}", color=before.author.color).set_author(name=before.author.display_name, icon_url=before.author.display_avatar.url, url=f"https://discord.com/users/{before.author.id}").add_field(name="Позиция:", value=f"{position + 1} / {rpos}").add_field(name="Ссылка на сообщение", value=f"[Перейти]({after.jump_url})"))
+  view.message = await interaction.original_response()
 
 @bot.tree.command(name='снайп', description='Показывает удалённые сообщения в канале')
 @app_commands.guild_only
