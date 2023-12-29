@@ -1395,6 +1395,8 @@ async def spamt(type, method, channel, webhook, ments=None, duration=None):
     cur.execute("DELETE FROM spams WHERE channel_id = %s;", (str(channel.id),))
     con.commit()
     return
+  except discord.errors.HTTPException:
+    asyncio.sleep(3)
   except (discord.errors.DiscordServerError, aiohttp.client_exceptions.ClientOSError, aiohttp.client_exceptions.ServerDisconnectedError) as e:
     cur.execute("DELETE FROM spams WHERE channel_id = %s;", (str(channel.id),))
     con.commit()
