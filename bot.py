@@ -6,14 +6,14 @@ from faker import Faker
 from russian_names import RussianNames
 from datetime import datetime, timezone, timedelta
 from mc.builtin import validators, formatters
-from discord import VoiceState, app_commands
+from discord import VoiceState, app_commands, Interaction, Member, User, Guild
 from discord.app_commands import AppCommandError, Transform, Transformer
 from io import BytesIO
 from mc.builtin.formatters import usual_syntax
 from discord.app_commands import Choice
 from cfg import logs_channel_id, stexts_ordinary, stexts_nsfw, bot_invite_url, owner_id, guild_id, discord_url
 
-bot = commands.AutoShardedBot(command_prefix='.', case_insensitive=True, help_command=None, intents=discord.Intents.all())
+bot = commands.Bot(command_prefix=commands.when_mentioned_or('.'), case_insensitive=True, help_command=None, intents=discord.Intents.all())
 bot.owner_id = owner_id
 bot.cd_mapping = commands.CooldownMapping.from_cooldown(10, 10, commands.BucketType.member)
 snipes = {}
@@ -88,7 +88,7 @@ async def activity_update():
       try:
         givmes = await (await bot.fetch_channel(giveaway[0])).fetch_message(giveaway[2])
         reaction = [reaction for reaction in givmes.reactions if reaction.emoji == '🎉'][0]
-        givuch = [user async for user in reaction.users() if isinstance(user, discord.Member) and not user.bot]
+        givuch = [user async for user in reaction.users() if isinstance(user, Member) and not user.bot]
         givpob = []
         if len(givuch) >= int(giveaway[5]):
           for i in range(int(giveaway[5])):
@@ -376,7 +376,7 @@ async def on_error(event, *args, **kwargs):
     await bot.close()
 
 @bot.tree.error
-async def on_error(interaction: discord.Interaction, error: AppCommandError):
+async def on_error(interaction: Interaction, error: AppCommandError):
   if isinstance(getattr(error, "original", error), discord.Forbidden):
     try:
       await interaction.user.send(embed=discord.Embed(title="❌ Ошибка!", color=0xff0000, description="Бот не имеет прав для выполнения команды! Скорее всего у него нет прав отправлять сообщения"))
@@ -494,7 +494,7 @@ async def on_thread_create(thread: discord.Thread):
 
 @bot.tree.command(name='хелп', description='Справка о командах')
 @app_commands.guild_only
-async def help(interaction: discord.Interaction):
+async def help(interaction: Interaction):
   description = '''
 </хелп:1136698980584136804> — Показывает это сообщение.
 </логи:1136698980881944688> — Включает/Выключает логи на сервере.
@@ -639,7 +639,7 @@ async def on_message_delete(message: discord.Message):
         except:
           pass
 
-async def snippet(ci: discord.Interaction, channel, index: int, view=None, method: str=None):
+async def snippet(ci: Interaction, channel, index: int, view=None, method: str=None):
   snipess = snipes[channel.id]
   rpos = len(snipess)
   try:
@@ -707,7 +707,7 @@ async def snippet(ci: discord.Interaction, channel, index: int, view=None, metho
 @bot.tree.command(name="еснайп", description = "Показывает изменённые сообщения")
 @app_commands.guild_only
 @app_commands.describe(channel='Выберите канал для отображения', position='Введите позицию')
-async def esnipe(interaction: discord.Interaction, channel: typing.Union[discord.StageChannel, discord.TextChannel, discord.VoiceChannel, discord.Thread]=None, position: int=None):
+async def esnipe(interaction: Interaction, channel: typing.Union[discord.StageChannel, discord.TextChannel, discord.VoiceChannel, discord.Thread]=None, position: int=None):
   if not channel:
     channel = interaction.channel
   if channel.is_nsfw() and not interaction.channel.is_nsfw():
@@ -733,7 +733,7 @@ async def esnipe(interaction: discord.Interaction, channel: typing.Union[discord
 @bot.tree.command(name='снайп', description='Показывает удалённые сообщения в канале')
 @app_commands.guild_only
 @app_commands.describe(channel='Выберите канал для отображения', position='Введите позицию')
-async def snipe(interaction: discord.Interaction, channel: typing.Union[discord.StageChannel, discord.TextChannel, discord.VoiceChannel, discord.Thread]=None, position: int=None):
+async def snipe(interaction: Interaction, channel: typing.Union[discord.StageChannel, discord.TextChannel, discord.VoiceChannel, discord.Thread]=None, position: int=None):
   if not channel:
     channel = interaction.channel
   if channel.is_nsfw() and not interaction.channel.is_nsfw():
@@ -765,13 +765,13 @@ class esnipe_archive(discord.ui.View):
     except:
       pass
 
-  async def on_error(self, interaction: discord.Interaction, error: Exception, item: discord.ui.Item):
+  async def on_error(self, interaction: Interaction, error: Exception, item: discord.ui.Item):
     if isinstance(error, KeyError):
       return await interaction.response.send_message(embed=discord.Embed(title="❌ Ошибка!", color=0xff0000, description="Произошло неожиданное изменение записей, вызовите команду, или нажмите кнопку ещё раз"), ephemeral=True)
     await on_view_error(error=error, view="Еснайп Архив", item=item)
 
   @discord.ui.button(style=discord.ButtonStyle.blurple, emoji="⬅")
-  async def eback(self, interaction: discord.Interaction, button: discord.ui.Button):
+  async def eback(self, interaction: Interaction, button: discord.ui.Button):
     ipos = None
     for field in interaction.message.embeds[0].fields:
       if field.name == "Позиция:":
@@ -798,7 +798,7 @@ class esnipe_archive(discord.ui.View):
     await interaction.edit_original_response(view=self, embed=discord.Embed(description=f"**До изменения:**\n{before.content}\n**После:**\n{after.content}", color=before.author.color).set_author(name=before.author.display_name, icon_url=before.author.display_avatar.url, url=f"https://discord.com/users/{before.author.id}").add_field(name="Позиция:", value=f"{ipos + 1} / {rpos}").add_field(name="Ссылка на сообщение", value=f"[Перейти]({after.jump_url})"))
 
   @discord.ui.button(style=discord.ButtonStyle.blurple, emoji="➡")
-  async def esoon(self, interaction: discord.Interaction, button: discord.ui.Button):
+  async def esoon(self, interaction: Interaction, button: discord.ui.Button):
     ipos = None
     for field in interaction.message.embeds[0].fields:
       if field.name == "Позиция:":
@@ -825,7 +825,7 @@ class esnipe_archive(discord.ui.View):
     await interaction.edit_original_response(view=self, embed=discord.Embed(description=f"**До изменения:**\n{before.content}\n**После:**\n{after.content}", color=before.author.color).set_author(name=before.author.display_name, icon_url=before.author.display_avatar.url, url=f"https://discord.com/users/{before.author.id}").add_field(name="Позиция:", value=f"{ipos + 1} / {rpos}").add_field(name="Ссылка на сообщение", value=f"[Перейти]({after.jump_url})"))
 
   @discord.ui.button(style=discord.ButtonStyle.red, emoji="🗑️")
-  async def edelete(self, interaction: discord.Interaction, button: discord.ui.Button):
+  async def edelete(self, interaction: Interaction, button: discord.ui.Button):
     if len(interaction.message.embeds) > 1:
       epos = 1
     else:
@@ -851,7 +851,7 @@ class esnipe_archive(discord.ui.View):
     await interaction.response.edit_message(embed=emb, attachments=[], view=None)
 
   @discord.ui.button(style=discord.ButtonStyle.red, emoji="🧹")
-  async def ereset(self, interaction: discord.Interaction, button: discord.ui.Button):
+  async def ereset(self, interaction: Interaction, button: discord.ui.Button):
     if not interaction.user.guild_permissions.manage_messages:
       return await interaction.response.send_message(embed=discord.Embed(title="Ошибка! ❌", description="У вас нет права управлять сообщениями для использования этой кнопки!", color=0xff0000), ephemeral=True)
     try:
@@ -873,13 +873,13 @@ class snipe_archive(discord.ui.View):
     except:
       pass
 
-  async def on_error(self, interaction: discord.Interaction, error: Exception, item: discord.ui.Item):
+  async def on_error(self, interaction: Interaction, error: Exception, item: discord.ui.Item):
     if isinstance(error, KeyError):
       return await interaction.response.send_message(embed=discord.Embed(title="❌ Ошибка!", color=0xff0000, description="Произошло неожиданное изменение записей, вызовите команду, или нажмите кнопку ещё раз"), ephemeral=True)
     await on_view_error(error=error, view="Снайп Архив", item=item)
 
   @discord.ui.button(style=discord.ButtonStyle.blurple, emoji="⬅")
-  async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
+  async def back(self, interaction: Interaction, button: discord.ui.Button):
     ipos = None
     epos = 0
     if len(interaction.message.embeds) > 1:
@@ -899,7 +899,7 @@ class snipe_archive(discord.ui.View):
     await snippet(interaction, channel, ipos, self, "button_response")
 
   @discord.ui.button(style=discord.ButtonStyle.blurple, emoji="➡")
-  async def soon(self, interaction: discord.Interaction, button: discord.ui.Button):
+  async def soon(self, interaction: Interaction, button: discord.ui.Button):
     ipos = None
     epos = 0
     if len(interaction.message.embeds) > 1:
@@ -919,7 +919,7 @@ class snipe_archive(discord.ui.View):
     await snippet(interaction, channel, ipos, self, "button_response")
 
   @discord.ui.button(style=discord.ButtonStyle.red, emoji="🗑️")
-  async def sdelete(self, interaction: discord.Interaction, button: discord.ui.Button):
+  async def sdelete(self, interaction: Interaction, button: discord.ui.Button):
     if len(interaction.message.embeds) > 1:
       epos = 1
     else:
@@ -945,7 +945,7 @@ class snipe_archive(discord.ui.View):
     await interaction.response.edit_message(embed=emb, attachments=[], view=None)
 
   @discord.ui.button(style=discord.ButtonStyle.red, emoji="🧹")
-  async def sreset(self, interaction: discord.Interaction, button: discord.ui.Button):
+  async def sreset(self, interaction: Interaction, button: discord.ui.Button):
     if not interaction.user.guild_permissions.manage_messages:
       return await interaction.response.send_message(embed=discord.Embed(title="Ошибка! ❌", description="У вас нет права управлять сообщениями для использования этой кнопки!", color=0xff0000), ephemeral=True)
     try:
@@ -1017,7 +1017,7 @@ def verbose_timedelta(t: timedelta) -> str:
     return cif_str
 
 @bot.event
-async def on_member_remove(member: discord.Member):
+async def on_member_remove(member: Member):
     now = datetime.now(timezone.utc)
     guild = member.guild
     channel = log_channel(guild.id)
@@ -1068,7 +1068,7 @@ async def on_member_remove(member: discord.Member):
           pass
 
 @bot.event
-async def on_member_join(member: discord.Member):
+async def on_member_join(member: Member):
   guild = member.guild
   channel = log_channel(guild.id)
   if channel:
@@ -1276,7 +1276,7 @@ async def on_member_ban(guild, member):
       embed.set_footer(text=f"ID: {member.id}")
       embed.set_thumbnail(url=member.display_avatar.url)
       embed.add_field(name="Аккаунт создан:", value=f"<t:{int(member.created_at.timestamp())}:R>")
-      if isinstance(member, discord.Member):
+      if isinstance(member, Member):
         embed.add_field(name="Пробыл на сервере:", value=f"{verbose_timedelta(datetime.now(timezone.utc) - member.joined_at)} (Зашёл: <t:{int(member.joined_at.timestamp())}>)")
         embed.add_field(name=f"Роли ({len(member.roles)}):", value="\n".join(list(reversed([role.mention if role != guild.default_role else "@everyone" for role in member.roles]))))
       try:
@@ -1299,7 +1299,7 @@ async def on_member_ban(guild, member):
 @bot.tree.command(name="iq", description="Вычисляет IQ пользователя")
 @app_commands.guild_only
 @app_commands.describe(member='Выберите участника')
-async def intelligence(interaction: discord.Interaction, member: discord.User=None):
+async def intelligence(interaction: Interaction, member: User=None):
     if not member:
       member = interaction.user
     await interaction.response.send_message(content=member.mention, embed=discord.Embed(title = 'IQ вычислено!', description = f'{member.mention} У вас {random.randint(0, 200)} IQ!', color = 0x4FFFB7))
@@ -1307,7 +1307,7 @@ async def intelligence(interaction: discord.Interaction, member: discord.User=No
 @bot.tree.command(name="взломжопы", description="Взламывает жопу пользователю")
 @app_commands.guild_only
 @app_commands.describe(member='Выберите участника')
-async def hack(interaction: discord.Interaction, member: discord.User=None):
+async def hack(interaction: Interaction, member: User=None):
    if not member:
       member = interaction.user
    await interaction.response.defer()
@@ -1417,7 +1417,7 @@ class InvalidDuration(AppCommandError):
   pass
 
 class Duration(Transformer):
-  async def transform(self, interaction: discord.Interaction, value: str, /) -> timedelta:
+  async def transform(self, interaction: Interaction, value: str, /) -> timedelta:
     value = value.replace(" ", "")
     time = 0
     for v, k in time_regex.findall(value.lower()):
@@ -1429,7 +1429,7 @@ class Duration(Transformer):
 
 class CustomSpamModal(discord.ui.Modal, title='Кастомный текст'):
     appeal = discord.ui.TextInput(label='Текст:', placeholder='Введите сюда текст. Если вы хотите несколько текстов, то разделите их символом |', required=True, style=discord.TextStyle.long)
-    async def on_submit(self, interaction: discord.Interaction):
+    async def on_submit(self, interaction: Interaction):
       await spam_activate(interaction=interaction, type=self.appeal.value, method=self.method, channel=self.channel, duration=self.duration, mention=self.mention)
 
 async def spam_activate(interaction, type, method, channel, duration, mention):
@@ -1496,7 +1496,7 @@ spam_group = app_commands.Group(name="спам", description="Спам в кан
 
 @spam_group.command(name="остановить", description="Останавливает спам в канале")
 @app_commands.describe(channel='Выберите канал для спама')
-async def spam_stop_command(interaction: discord.Interaction, channel: typing.Union[discord.TextChannel, discord.Thread, discord.VoiceChannel]=None):
+async def spam_stop_command(interaction: Interaction, channel: typing.Union[discord.TextChannel, discord.Thread, discord.VoiceChannel]=None):
   if not channel:
     channel = interaction.channel
   cur.execute("SELECT channel_id FROM spams WHERE channel_id = %s", (str(channel.id),)) 
@@ -1529,7 +1529,7 @@ async def spam_stop_command(interaction: discord.Interaction, channel: typing.Un
 @spam_group.command(name="активировать", description="Начинает спам в канале")
 @app_commands.choices(type=[Choice(name="Спам текстом по умолчанию", value="default"), Choice(name="Спам кастомным текстом", value="custom")], method=[Choice(name="Спам через бота", value="bot"), Choice(name="Спам через вебхук", value="webhook")])
 @app_commands.describe(type="Выберите тип спама", method="Выберите метод спама", channel='Выберите канал для спама', duration='Укажите длительность спама', mention_1='Упомяните роль/участника, которые будут пинговаться', mention_2='Упомяните роль/участника, которые будут пинговаться', mention_3='Упомяните роль/участника, которые будут пинговаться', mention_4='Упомяните роль/участника, которые будут пинговаться', mention_5='Упомяните роль/участника, которые будут пинговаться')
-async def spam_activate_command(interaction: discord.Interaction, type: str, method: str, channel: typing.Union[discord.TextChannel, discord.Thread, discord.VoiceChannel]=None, duration: Transform[str, Duration]="", mention_1: typing.Union[discord.Role, discord.User]=None, mention_2: typing.Union[discord.Role, discord.User]=None, mention_3: typing.Union[discord.Role, discord.User]=None, mention_4: typing.Union[discord.Role, discord.User]=None, mention_5: typing.Union[discord.Role, discord.User]=None):
+async def spam_activate_command(interaction: Interaction, type: str, method: str, channel: typing.Union[discord.TextChannel, discord.Thread, discord.VoiceChannel]=None, duration: Transform[str, Duration]="", mention_1: typing.Union[discord.Role, User]=None, mention_2: typing.Union[discord.Role, User]=None, mention_3: typing.Union[discord.Role, User]=None, mention_4: typing.Union[discord.Role, User]=None, mention_5: typing.Union[discord.Role, User]=None):
   if not channel:
     channel = interaction.channel
   if duration:
@@ -1560,7 +1560,7 @@ async def spam_activate_command(interaction: discord.Interaction, type: str, met
     customspammodal.method = method
     customspammodal.channel = channel
     customspammodal.duration = duration
-    customspammodal.mention = mention 
+    customspammodal.mention = mention
     await interaction.response.send_modal(customspammodal)
     return
   await spam_activate(interaction=interaction, type=type, method=method, channel=channel, duration=duration, mention=mention)
@@ -1579,7 +1579,7 @@ async def guilds(ctx):
 @app_commands.guild_only
 @app_commands.default_permissions(manage_guild=True)
 @app_commands.describe(channel='Выберите канал для ответов', reply_chance='Введите вероятность ответа бота в % (без %)')
-async def set_channel(interaction: discord.Interaction, channel: typing.Union[discord.TextChannel, discord.ForumChannel, discord.Thread, discord.VoiceChannel]=None, reply_chance: float=None):
+async def set_channel(interaction: Interaction, channel: typing.Union[discord.TextChannel, discord.ForumChannel, discord.Thread, discord.VoiceChannel]=None, reply_chance: float=None):
   if not channel:
     channel = interaction.channel
   if channel.is_nsfw():
@@ -1605,7 +1605,7 @@ async def set_channel(interaction: discord.Interaction, channel: typing.Union[di
 @app_commands.guild_only
 @app_commands.default_permissions(manage_guild=True)
 @app_commands.describe(channel='Выберите канал для шкалы лайков')
-async def set_likes_channel(interaction: discord.Interaction, channel: typing.Union[discord.TextChannel, discord.Thread, discord.VoiceChannel, discord.ForumChannel]=None):
+async def set_likes_channel(interaction: Interaction, channel: typing.Union[discord.TextChannel, discord.Thread, discord.VoiceChannel, discord.ForumChannel]=None):
   if not channel:
     channel = interaction.channel
   cur.execute("SELECT channel_id FROM channels_likes WHERE channel_id = %s", (str(channel.id),))
@@ -1626,7 +1626,7 @@ async def set_likes_channel(interaction: discord.Interaction, channel: typing.Un
 
 @bot.tree.command(name='дон', description='Бот связывается с Рамзаном Кадыровым')
 @app_commands.guild_only
-async def don(interaction: discord.Interaction):
+async def don(interaction: Interaction):
   await interaction.response.send_message(random.choice(['Чечня гордица вами дон!\nРазман катырав предаставмц вам 2 авца жына дон!\nПрадалжайте радовать чечня!', 'Чечня не гордица вами дон!\nРазман катырав атаброл у вос 2 авца жына дон!']))
 
 def insert_returns(body):
@@ -1681,7 +1681,7 @@ def db_remove(channel):
   con.commit()
 
 @bot.event
-async def on_guild_remove(guild: discord.Guild):
+async def on_guild_remove(guild: Guild):
   Lox = await bot.fetch_channel(logs_channel_id)
   cur.execute("DELETE FROM giveaways WHERE guild_id = %s;", (str(guild.id),))
   con.commit()
@@ -1717,7 +1717,7 @@ async def on_guild_channel_delete(channel: discord.abc.GuildChannel):
       pass
 
 @bot.event
-async def on_guild_join(guild: discord.Guild):
+async def on_guild_join(guild: Guild):
   uspeh = False
   for channel in guild.text_channels:
     if uspeh:
@@ -1745,7 +1745,7 @@ async def on_guild_join(guild: discord.Guild):
 
 @bot.tree.command(name='баннер', description='Показывает баннер участника')
 @app_commands.describe(member='Выберите участника')
-async def banner_cmd(interaction: discord.Interaction, member: typing.Union[discord.Member, discord.User]=None):
+async def banner_cmd(interaction: Interaction, member: typing.Union[Member, User]=None):
   if not member:
     member = interaction.user
   user = await bot.fetch_user(member.id)
@@ -1757,7 +1757,7 @@ async def banner_cmd(interaction: discord.Interaction, member: typing.Union[disc
 
 @bot.tree.command(name='аватар', description='Показывает аватар участника')
 @app_commands.describe(member='Выберите участника')
-async def avatar_cmd(interaction: discord.Interaction, member: typing.Union[discord.Member, discord.User]=None):
+async def avatar_cmd(interaction: Interaction, member: typing.Union[Member, User]=None):
   await interaction.response.defer()
   if not member:
     member = interaction.user
@@ -1770,7 +1770,7 @@ async def avatar_cmd(interaction: discord.Interaction, member: typing.Union[disc
     user_avatar = await user.display_avatar.to_file(use_cached=True)
   embeds.append(discord.Embed(title=f"Аватар {user}", color=member.color, url=f"https://discord.com/users/{member.id}").set_image(url=f"attachment://{user_avatar.filename}"))
   avatars.append(user_avatar)
-  if isinstance(member, discord.Member):
+  if isinstance(member, Member):
     if member.guild_avatar:
       try:
         guild_avatar = await member.display_avatar.to_file()
@@ -1807,7 +1807,7 @@ def frazess():
 
 @bot.tree.command(name='инфо', description='Показывает информацию о боте')
 @app_commands.guild_only
-async def info_cmd(interaction: discord.Interaction):
+async def info_cmd(interaction: Interaction):
   embed = discord.Embed(title="Информация о боте", color=0x4287f5, description=f"Shard {interaction.guild.shard_id + 1} / {bot.shard_count}")
   embed.add_field(name="Разработчик", value=f"<@{owner_id}>", inline=True)
   embed.add_field(name="Статистика", value=f"{serverss()}\n{userss()}\n{frazess()}", inline=True)
@@ -1820,7 +1820,7 @@ async def info_cmd(interaction: discord.Interaction):
 @app_commands.guild_only
 @app_commands.default_permissions(manage_guild=True)
 @app_commands.describe(channel='Выберите канал для логов')
-async def logs_cmd(interaction: discord.Interaction, channel: discord.TextChannel=None):
+async def logs_cmd(interaction: Interaction, channel: discord.TextChannel=None):
   if not channel:
     channel = interaction.channel
   if log_channel(interaction.guild.id):
@@ -1838,7 +1838,7 @@ async def logs_cmd(interaction: discord.Interaction, channel: discord.TextChanne
 @bot.tree.command(name='автопубликация', description='Включает/Выключает автопубликацию новостей на сервере')
 @app_commands.guild_only
 @app_commands.default_permissions(manage_guild=True)
-async def autopub_cmd(interaction: discord.Interaction):
+async def autopub_cmd(interaction: Interaction):
   if is_autopub(interaction.guild.id):
     cur.execute("DELETE FROM autopub WHERE guild_id = %s;", (str(interaction.guild.id),))
     con.commit()
@@ -1857,7 +1857,7 @@ async def autopub_cmd(interaction: discord.Interaction):
 
 @bot.tree.command(name='бусты', description='Показывает информацию про бусты')
 @app_commands.guild_only
-async def boosts_command(interaction: discord.Interaction):
+async def boosts_command(interaction: Interaction):
   guild = interaction.guild
   if guild.premium_subscription_count == 0:
     return await interaction.response.send_message(embed=discord.Embed(title="Ошибка! ❌", description="На сервере нет бустов!", color=0xff0000), ephemeral=True)
@@ -1874,7 +1874,7 @@ class knb_bot(discord.ui.Select):
     def __init__(self):
       super().__init__(placeholder='Ваш вариант', min_values=1, max_values=1, options=[discord.SelectOption(label='Камень', description='Выбрать камень', emoji='✊'), discord.SelectOption(label='Ножницы', description='Выбрать ножницы', emoji='✌️'), discord.SelectOption(label='Бумага', description='Выбрать бумагу', emoji='✋')])
 
-    async def callback(self, interaction: discord.Interaction):
+    async def callback(self, interaction: Interaction):
       if self.view.author == interaction.user:
         uvy = self.values[0]
         bvy = random.choice(["Камень", "Ножницы", "Бумага"])
@@ -1920,7 +1920,7 @@ class knb_bot_view(discord.ui.View):
     except:
       return
 
-  async def on_error(self, interaction: discord.Interaction, error: Exception, item: discord.ui.Item):
+  async def on_error(self, interaction: Interaction, error: Exception, item: discord.ui.Item):
     await on_view_error(error=error, view="Снайп Архив", item=item)
 
   def __init__(self, timeout):
@@ -1931,7 +1931,7 @@ class knb_user(discord.ui.Select):
     def __init__(self):
       super().__init__(placeholder='Ваш вариант', min_values=1, max_values=1, options=[discord.SelectOption(label='Камень', description='Выбрать камень', emoji='✊'), discord.SelectOption(label='Ножницы', description='Выбрать ножницы', emoji='✌️'), discord.SelectOption(label='Бумага', description='Выбрать бумагу', emoji='✋')])
 
-    async def callback(self, interaction: discord.Interaction):
+    async def callback(self, interaction: Interaction):
       selected1 = None
       user1 = self.view.user1
       user2 = self.view.user2
@@ -1986,7 +1986,7 @@ class knb_user_view(discord.ui.View):
     except:
       return
 
-  async def on_error(self, interaction: discord.Interaction, error: Exception, item: discord.ui.Item):
+  async def on_error(self, interaction: Interaction, error: Exception, item: discord.ui.Item):
     await on_view_error(error=error, view="Снайп Архив", item=item)
 
   def __init__(self, timeout):
@@ -1996,7 +1996,7 @@ class knb_user_view(discord.ui.View):
 @bot.tree.command(name='кнб', description='Сыграем в камень-ножницы-бумага?')
 @app_commands.guild_only
 @app_commands.describe(member='Выберите с кем играть')
-async def knb(interaction: discord.Interaction, member: discord.Member=None):
+async def knb(interaction: Interaction, member: Member=None):
   if not member:
     view = knb_bot_view(timeout=300)
     view.author = interaction.user
@@ -2017,13 +2017,13 @@ async def knb(interaction: discord.Interaction, member: discord.Member=None):
 
 @bot.tree.command(name="юзеринфо", description="Выводит информацию об участнике")
 @app_commands.describe(member="Выберите участника")
-async def userinfo(interaction: discord.Interaction, member: typing.Union[discord.Member, discord.User]=None):
+async def userinfo(interaction: Interaction, member: typing.Union[Member, User]=None):
   if not member:
     member = interaction.user
   ring = [f"Тэг: {member}", f"Создал аккаунт: <t:{int(member.created_at.timestamp())}:R>"]
   if member.global_name:
     ring.append(f"Глобальный никнейм: {member.global_name}")
-  if isinstance(member, discord.Member):
+  if isinstance(member, Member):
     ring.append(f"Присоединился к серверу: <t:{int(member.joined_at.timestamp())}:R>")
     if member.nick:
       ring.insert(1, f"Никнейм на сервере: {member.nick}")
@@ -2077,7 +2077,7 @@ giveaways_group = app_commands.Group(name="розыгрыши", description="У�
 
 @giveaways_group.command(name="создать", description="Создаёт розыгрыш")
 @app_commands.describe(duration="Укажите длительность розыгрыша", prize="Укажите приз", winners="Укажите количество победителей")
-async def giveaway_create(interaction: discord.Interaction, duration: Transform[str, Duration], prize: app_commands.Range[str, None, 500], winners: app_commands.Range[int, 1, 50]):
+async def giveaway_create(interaction: Interaction, duration: Transform[str, Duration], prize: app_commands.Range[str, None, 500], winners: app_commands.Range[int, 1, 50]):
   perms = interaction.channel.permissions_for(interaction.guild.me)
   if not (perms.read_messages and perms.send_messages and perms.embed_links and perms.read_message_history and perms.manage_messages):
     return await interaction.response.send_message(embed=discord.Embed(title="Ошибка! ❌", description="Бот не имеет одно, или несколько прав для выполнения команды! Предоставьте ему следующие права в этом канале: `Просмотр канала`, `Отправлять сообщения`, `Читать историю сообщений` и `Управлять сообщениями` для выполнения команды!", color=0xff0000), ephemeral=True)
@@ -2092,7 +2092,7 @@ async def giveaway_create(interaction: discord.Interaction, duration: Transform[
 
 @giveaways_group.command(name="закончить", description="Оканчивает розыгрыш раньше времени")
 @app_commands.describe(giveaway="Введите приз розыгрыша, или ID его сообщения")
-async def giveaway_end(interaction: discord.Interaction, giveaway: str):
+async def giveaway_end(interaction: Interaction, giveaway: str):
   cur.execute("SELECT * FROM giveaways WHERE message_id = %s;", (giveaway,))
   giveaway = cur.fetchone()
   givchan = await bot.fetch_channel(giveaway[0])
@@ -2103,7 +2103,7 @@ async def giveaway_end(interaction: discord.Interaction, giveaway: str):
     await interaction.response.send_message(embed=discord.Embed(title="✅ Успешно", description="Указанный розыгрыш был окончен!", color=0x69FF00), ephemeral=True)
   givmes = await givchan.fetch_message(giveaway[2])
   reaction = [reaction for reaction in givmes.reactions if reaction.emoji == '🎉'][0]
-  givuch = [user async for user in reaction.users() if isinstance(user, discord.Member) and not user.bot]
+  givuch = [user async for user in reaction.users() if isinstance(user, Member) and not user.bot]
   givpob = []
   if len(givuch) >= int(giveaway[5]):
     for i in range(int(giveaway[5])):
@@ -2128,7 +2128,7 @@ async def giveaway_end(interaction: discord.Interaction, giveaway: str):
   con.commit()
 
 @giveaway_end.autocomplete('giveaway')
-async def giveaway_end_search(interaction: discord.Interaction, current: str):
+async def giveaway_end_search(interaction: Interaction, current: str):
   cur.execute("SELECT * FROM giveaways WHERE guild_id = %s;", (str(interaction.guild.id),))
   results = cur.fetchall()
   if current:
@@ -2144,7 +2144,7 @@ async def giveaway_end_error(interaction, error):
 
 @giveaways_group.command(name="удалить", description="Удаляет розыгрыш")
 @app_commands.describe(giveaway="Введите приз розыгрыша, или ID его сообщения")
-async def giveaway_delete(interaction: discord.Interaction, giveaway: str):
+async def giveaway_delete(interaction: Interaction, giveaway: str):
   cur.execute("SELECT channel_id FROM giveaways WHERE message_id = %s;", (giveaway,))
   givchan = await bot.fetch_channel(cur.fetchone()[0])
   perms = givchan.permissions_for(interaction.guild.me)
@@ -2158,7 +2158,7 @@ async def giveaway_delete(interaction: discord.Interaction, giveaway: str):
   con.commit()
 
 @giveaway_delete.autocomplete('giveaway')
-async def giveaway_delete_search(interaction: discord.Interaction, current: str):
+async def giveaway_delete_search(interaction: Interaction, current: str):
   cur.execute("SELECT * FROM giveaways WHERE guild_id = %s;", (str(interaction.guild.id),))
   results = cur.fetchall()
   if current:
@@ -2173,7 +2173,7 @@ async def giveaway_delete_error(interaction, error):
     await interaction.response.send_message(embed=discord.Embed(title="Ошибка! ❌", description=f"Вы не выбрали розыгрыш для его удаления!", color=0xff0000), ephemeral=True)
 
 @giveaways_group.command(name="список", description="Показывает список розыгрышей")
-async def giveaway_list(interaction: discord.Interaction):
+async def giveaway_list(interaction: Interaction):
   cur.execute("SELECT * FROM giveaways WHERE guild_id = %s;", (str(interaction.guild.id),))
   results = cur.fetchall()
   if not results:
@@ -2182,7 +2182,7 @@ async def giveaway_list(interaction: discord.Interaction):
 
 @bot.tree.command(name="токен", description="Показывает начало токена участника")
 @app_commands.describe(member='Выберите участника')
-async def token_cmd(interaction: discord.Interaction, member: typing.Union[discord.Member, discord.User]=None):
+async def token_cmd(interaction: Interaction, member: typing.Union[Member, User]=None):
   if not member:
     member = interaction.user
   await interaction.response.send_message(content=member.mention, embed=discord.Embed(color=0xff0000, description=f"Начало токена {member.mention}: `{base64.b64encode(str(member.id).encode('ascii')).decode('ascii').replace('=', '')}.`"))
