@@ -18,7 +18,13 @@ bot.owner_id = owner_id
 bot.cd_mapping = commands.CooldownMapping.from_cooldown(10, 10, commands.BucketType.member)
 snipes = {}
 esnipes = {}
-con = psycopg2.connect(os.environ.get('DATABASE_URL'))
+keepalive_kwargs = {
+    "keepalives": 1,
+    "keepalives_idle": 30,
+    "keepalives_interval": 5,
+    "keepalives_count": 5,
+}
+con = psycopg2.connect(os.environ.get('DATABASE_URL'), **keepalive_kwargs)
 cur = con.cursor()
 cur.execute("SELECT * FROM markov_chain;")
 generator = mc.PhraseGenerator(samples=[r[0] for r in cur.fetchall()])
@@ -64,12 +70,6 @@ def random_phone_num_generator():
     while last in ['1111', '2222', '3333', '4444', '5555', '6666', '7777', '8888']:
         last = (str(random.randint(1, 9998)).zfill(4))
     return '{}-{}-{}'.format(first, second, last)
-
-@tasks.loop(seconds=7200)
-async def con_update():
-  global con, cur
-  con = psycopg2.connect(os.environ.get('DATABASE_URL'))
-  cur = con.cursor()
 
 @tasks.loop(seconds=3600)
 async def snipes_update():
@@ -161,7 +161,6 @@ async def on_ready():
   cur.execute("select * from spams")
   results = cur.fetchall()
   [await start_zh(key) for key in results]
-  con_update.start()
   activity_update.start()
   snipes_update.start()
 
