@@ -2113,5 +2113,7 @@ async def token_cmd(interaction: Interaction, member: typing.Union[Member, User]
 bot.tree.add_command(giveaways_group)
 bot.tree.add_command(spam_group)
 
-discord.gateway.DiscordWebSocket.identify = mobile
-bot.run(os.environ['TOKEN'], handler=DiscordHandler(service_name="Логи Крутяка", webhook_url=os.environ['WEBHOOK_URL'], avatar_url=f'https://cdn.discordapp.com/avatars/1136693304826806342/43689bd9e44328e1b98b9be9a2e55c65.png'), formatter=logging.Formatter("%(message)s"), log_level=logging.DEBUG)
+if __name__ == '__main__':
+  discord.gateway.DiscordWebSocket.identify = mobile
+  discord.utils.setup_logging(handler=DiscordHandler(service_name="Логи Крутяка", webhook_url=os.environ['WEBHOOK_URL'], avatar_url=f'https://cdn.discordapp.com/avatars/1136693304826806342/43689bd9e44328e1b98b9be9a2e55c65.png'), formatter=logging.Formatter("%(message)s"))
+  bot.run(os.environ['TOKEN'], log_level=logging.DEBUG)
