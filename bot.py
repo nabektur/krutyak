@@ -12,6 +12,7 @@ from io import BytesIO
 from mc.builtin.formatters import usual_syntax
 from discord.app_commands import Choice
 from cfg import logs_channel_id, stexts_ordinary, stexts_nsfw, bot_invite_url, owner_id, guild_id, discord_url
+from discord_logging.handler import DiscordHandler
 
 bot = commands.Bot(command_prefix=commands.when_mentioned_or('.'), case_insensitive=True, help_command=None, intents=discord.Intents.all())
 bot.owner_id = owner_id
@@ -76,6 +77,15 @@ async def snipes_update():
   global esnipes, snipes
   esnipes = {}
   snipes = {}
+
+@tasks.loop(seconds=3600)
+async def con_update():
+  global con, cur
+  co1 = con
+  co2 = psycopg2.connect(os.environ.get('DATABASE_URL'), **keepalive_kwargs)
+  cu2 = co2.cursor()
+  con, cur = co2, cu2
+  co1.close()
 
 @tasks.loop(seconds=5)
 async def activity_update():
@@ -161,6 +171,7 @@ async def on_ready():
   cur.execute("select * from spams")
   results = cur.fetchall()
   [await start_zh(key) for key in results]
+  con_update.start()
   activity_update.start()
   snipes_update.start()
 
@@ -325,79 +336,6 @@ async def on_message_edit(message_before, message_after):
         await message_after.guild.owner.send(embed=discord.Embed(title="❌ Ошибка!", color=0xff0000, description="Бот не имеет прав для отправки логов!"))
       except:
         pass
-
-@bot.event
-async def on_command_error(ctx, error):
-  if ctx.invoked_with in ['run', 'запустить']:
-    return
-  if isinstance(error, commands.CommandNotFound):
-    return
-  if isinstance(error, commands.NotOwner):
-    try:
-      await ctx.reply(embed=discord.Embed(title="Ошибка! ❌", description="Вы не разработчик бота, чтоб использовать эту команду!", color=0xff0000))
-    except:
-      await ctx.send(embed=discord.Embed(title="Ошибка! ❌", description="Вы не разработчик бота, чтоб использовать эту команду!", color=0xff0000))
-    return
-  if isinstance(error, commands.BadArgument):
-      try:
-        await ctx.reply(embed=discord.Embed(title="❌ Ошибка!", color=0xff0000, description="Неправильный тип аргумента!"))
-      except:
-        await ctx.send(embed=discord.Embed(title="❌ Ошибка!", color=0xff0000, description="Неправильный тип аргумента!"))
-      return
-  if isinstance(error, commands.BadUnionArgument):
-      try:
-        await ctx.reply(embed=discord.Embed(title="❌ Ошибка!", color=0xff0000, description="Неправильный тип аргумента!"))
-      except:
-        await ctx.send(embed=discord.Embed(title="❌ Ошибка!", color=0xff0000, description="Неправильный тип аргумента!"))
-      return
-  atrio = getattr(error, "original", error)
-  if isinstance(atrio, discord.Forbidden):
-    try:
-      await ctx.author.send(embed=discord.Embed(title="❌ Ошибка!", color=0xff0000, description="Бот не имеет прав для выполнения команды! Скорее всего у него нет прав отправлять сообщения"))
-    except:
-      pass
-    return
-  Lox = await bot.fetch_channel(logs_channel_id)
-  embed = discord.Embed(title=':x: Вызвана ошибка!', colour=0xe74c3c, description=f'**Ошибка**:```py\n{error}```', timestamp=datetime.now(timezone.utc))
-  embed.add_field(name="Команда:", value=ctx.invoked_with)
-  await Lox.send(embed=embed)
-  if isinstance(error, psycopg2.errors.InFailedSqlTransaction):
-    await bot.close()
-
-@bot.event
-async def on_error(event, *args, **kwargs):
-  Lox = await bot.fetch_channel(logs_channel_id)
-  async with Lox.typing():
-    embed = discord.Embed(title=':x: Ошибка в исполнении события!', colour=0xe74c3c, description=f'**Ошибка**:\n```py\n{traceback.format_exc()}\n```', timestamp=datetime.now(timezone.utc))
-    embed.add_field(name='Событие:', value=event)
-  await Lox.send(embed=embed)
-  if "psycopg2.errors.InFailedSqlTransaction" in traceback.format_exc():
-    await bot.close()
-
-@bot.tree.error
-async def on_error(interaction: Interaction, error: AppCommandError):
-  if isinstance(getattr(error, "original", error), discord.Forbidden):
-    try:
-      await interaction.user.send(embed=discord.Embed(title="❌ Ошибка!", color=0xff0000, description="Бот не имеет прав для выполнения команды! Скорее всего у него нет прав отправлять сообщения"))
-    except:
-      pass
-    return
-  if isinstance(getattr(error, "original", error), KeyError):
-    return
-  if isinstance(error, InvalidDuration):
-    return
-  Lox = await bot.fetch_channel(logs_channel_id)
-  embed = discord.Embed(title=':x: Вызвана ошибка!', color=0xe74c3c, timestamp=datetime.now(timezone.utc), description=f'**Ошибка**:\n```py\n{error}```')
-  if interaction.command:
-    embed.add_field(name="Слэш команда:", value=interaction.command.name)
-  await Lox.send(embed=embed)
-  if isinstance(error, psycopg2.errors.InFailedSqlTransaction):
-    await bot.close()
-
-async def on_view_error(error: Exception, view: str, item: discord.ui.Item):
-  Lox = await bot.fetch_channel(logs_channel_id)
-  embed = discord.Embed(title=f':x: Вызвана ошибка в View {view}!', color=0xe74c3c, timestamp=datetime.now(timezone.utc), description=f'**Ошибка**:\n```py\n{error}```').add_field(name="Предмет, вызвавший ошибку:", value=str(item))
-  await Lox.send(embed=embed)
 
 async def add_message(message: discord.Message):
         mentioned = bot.user.mentioned_in(message)
@@ -764,11 +702,6 @@ class esnipe_archive(discord.ui.View):
     except:
       pass
 
-  async def on_error(self, interaction: Interaction, error: Exception, item: discord.ui.Item):
-    if isinstance(error, KeyError):
-      return await interaction.response.send_message(embed=discord.Embed(title="❌ Ошибка!", color=0xff0000, description="Произошло неожиданное изменение записей, вызовите команду, или нажмите кнопку ещё раз"), ephemeral=True)
-    await on_view_error(error=error, view="Еснайп Архив", item=item)
-
   @discord.ui.button(style=discord.ButtonStyle.blurple, emoji="⬅")
   async def eback(self, interaction: Interaction, button: discord.ui.Button):
     ipos = None
@@ -871,11 +804,6 @@ class snipe_archive(discord.ui.View):
       await self.message.edit(view=self)
     except:
       pass
-
-  async def on_error(self, interaction: Interaction, error: Exception, item: discord.ui.Item):
-    if isinstance(error, KeyError):
-      return await interaction.response.send_message(embed=discord.Embed(title="❌ Ошибка!", color=0xff0000, description="Произошло неожиданное изменение записей, вызовите команду, или нажмите кнопку ещё раз"), ephemeral=True)
-    await on_view_error(error=error, view="Снайп Архив", item=item)
 
   @discord.ui.button(style=discord.ButtonStyle.blurple, emoji="⬅")
   async def back(self, interaction: Interaction, button: discord.ui.Button):
@@ -1921,9 +1849,6 @@ class knb_bot_view(discord.ui.View):
     except:
       return
 
-  async def on_error(self, interaction: Interaction, error: Exception, item: discord.ui.Item):
-    await on_view_error(error=error, view="Снайп Архив", item=item)
-
   def __init__(self, timeout):
     super().__init__()
     self.add_item(knb_bot())
@@ -1986,9 +1911,6 @@ class knb_user_view(discord.ui.View):
       await message.edit(view=self, embed=discord.Embed(title="КНБ выбор", description="Проигнорили...", color=0x747880))
     except:
       return
-
-  async def on_error(self, interaction: Interaction, error: Exception, item: discord.ui.Item):
-    await on_view_error(error=error, view="Снайп Архив", item=item)
 
   def __init__(self, timeout):
     super().__init__()
@@ -2192,4 +2114,4 @@ bot.tree.add_command(giveaways_group)
 bot.tree.add_command(spam_group)
 
 discord.gateway.DiscordWebSocket.identify = mobile
-bot.run(os.environ['TOKEN'], log_level=logging.ERROR)
+bot.run(os.environ['TOKEN'], handler=DiscordHandler(service_name="Логи Крутяка", webhook_url=os.environ['WEBHOOK_URL'], avatar_url=f'https://cdn.discordapp.com/avatars/1136693304826806342/43689bd9e44328e1b98b9be9a2e55c65.png'), formatter=logging.Formatter("%(message)s"), log_level=logging.DEBUG)
