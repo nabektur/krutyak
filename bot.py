@@ -1581,7 +1581,9 @@ async def run(ctx, *, cmd: str):
         'discord': discord,
         'commands': commands,
         'ctx': ctx,
-        '__import__': __import__
+        '__import__': __import__,
+        'con': con,
+        'cur': cur
     }
     exec(compile(parsed, filename="<ast>", mode="exec"), env)
     await eval(f"{fn_name}()", env)
