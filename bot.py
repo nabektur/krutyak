@@ -164,6 +164,11 @@ async def start_zh(key):
   task.channel_id = channel.id
 
 @bot.event
+async def on_error(event, *args, **kwargs):
+  if "psycopg2.errors.InFailedSqlTransaction" in traceback.format_exc():
+    con.rollback()
+
+@bot.event
 async def on_ready():
   logging.info(f'Бот вошёл в систему как:\n{bot.user.name} (ID: {bot.user.id})\n------')
   cur.execute("select * from spams")
