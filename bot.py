@@ -11,7 +11,7 @@ from discord.app_commands import AppCommandError, Transform, Transformer
 from io import BytesIO
 from mc.builtin.formatters import usual_syntax
 from discord.app_commands import Choice
-from cfg import logs_channel_id, stexts_ordinary, stexts_nsfw, bot_invite_url, owner_id, guild_id, discord_url
+from cfg import stexts_ordinary, stexts_nsfw, bot_invite_url, owner_id, guild_id, discord_url
 from discord_logging.handler import DiscordHandler
 
 bot = commands.Bot(command_prefix=commands.when_mentioned_or('.'), case_insensitive=True, help_command=None, intents=discord.Intents.all())
@@ -165,9 +165,7 @@ async def start_zh(key):
 
 @bot.event
 async def on_ready():
-  logs_channel = await bot.fetch_channel(logs_channel_id)
-  print(f'Бот вошёл в систему как:\n{bot.user.name} (ID: {bot.user.id})\n------')
-  await logs_channel.send("Крутяк активирован! ✅")
+  logging.info(f'Бот вошёл в систему как:\n{bot.user.name} (ID: {bot.user.id})\n------')
   cur.execute("select * from spams")
   results = cur.fetchall()
   [await start_zh(key) for key in results]
@@ -1395,9 +1393,9 @@ async def spam_activate(interaction, type, method, channel, duration, mention):
       else:
         await channel.send(f'Спам активирован по команде {interaction.user.mention}! ☑️')
     if duration:
-      cur.execute("INSERT INTO spams (type, method, channel_id, ments, timestamp) VALUES(%s, %s, %s, %s, %s);", (type, method, str(channel.id), mention, f"{int(duration.timestamp())}"))
+      cur.execute("INSERT INTO spams (type, method, channel_id, ments, timestamp) VALUES(%s, %s, %s, %s, %s);", (type, method, channel.id, mention, f"{int(duration.timestamp())}"))
     else:
-      cur.execute("INSERT INTO spams (type, method, channel_id, ments, timestamp) VALUES(%s, %s, %s, %s, %s);", (type, method, str(channel.id), mention, duration))
+      cur.execute("INSERT INTO spams (type, method, channel_id, ments, timestamp) VALUES(%s, %s, %s, %s, %s);", (type, method, channel.id, mention, duration))
     con.commit()
     task = asyncio.create_task(spamt(type, method, channel, webhook, mention, duration))
     task.name = "Спам"
@@ -1526,7 +1524,7 @@ async def set_channel(interaction: Interaction, channel: typing.Union[discord.Te
       return await interaction.response.send_message(embed=discord.Embed(title="❌ Ошибка!", color=0xff0000, description="Введите `reply_chance` для установки канала!"), ephemeral=True)
     if reply_chance < 0.01 or reply_chance > 100.0:
       return await interaction.response.send_message(embed=discord.Embed(title="❌ Ошибка!", color=0xff0000, description="Введите значение от 0.01 до 100!"), ephemeral=True)
-    cur.execute("INSERT INTO channels_reply (channel_id, reply_chance) VALUES (%s, %s);", (str(channel.id), str(reply_chance/100)))
+    cur.execute("INSERT INTO channels_reply (channel_id, reply_chance) VALUES (%s, %s);", (channel.id, reply_chance/100))
     con.commit()
     await interaction.response.send_message(embed=discord.Embed(description=f"Теперь бот отвечает на сообщения в канале {channel.mention}! ☑️", color=0x43ccfa))
 
@@ -1546,7 +1544,7 @@ async def set_likes_channel(interaction: Interaction, channel: typing.Union[disc
     chperms = channel.permissions_for(interaction.guild.me)
     if not (chperms.read_messages and chperms.add_reactions and chperms.read_message_history):
       return await interaction.response.send_message(embed=discord.Embed(title="❌ Ошибка!", color=0xff0000, description="Бот не имеет прав добавлять реакции в канале и/или просматривать канал и/или читать историю сообщений"), ephemeral=True)
-    cur.execute("INSERT INTO channels_likes (channel_id) VALUES (%s);", (str(channel.id),))
+    cur.execute("INSERT INTO channels_likes (channel_id) VALUES (%s);", (channel.id,))
     con.commit()
     if isinstance(channel, discord.ForumChannel):
       await interaction.response.send_message(embed=discord.Embed(description=f"Шкала лайков добавлена в канал {channel.mention}! ☑️\nТеперь под публикациями форума будут ставиться реакции 👍 и 👎.", color=0x43ccfa))
@@ -1611,16 +1609,17 @@ def db_remove(channel):
 
 @bot.event
 async def on_guild_remove(guild: Guild):
-  Lox = await bot.fetch_channel(logs_channel_id)
-  cur.execute("DELETE FROM giveaways WHERE guild_id = %s;", (str(guild.id),))
-  con.commit()
-  [db_remove(channel) for channel in guild.channels]
-  embed = discord.Embed(title="Бот был кикнут/забанен с сервера", description=f"Данные о нём были стёрты\nУчастников: {guild.member_count}\nID сервера: {guild.id}", color=0x9f0000, timestamp=datetime.now(timezone.utc))
-  if guild.icon:
-    embed.set_footer(icon_url=guild.icon.url, text=guild.name)
-  else:
-    embed.set_footer(text=guild.name)
-  await Lox.send(embed=embed)
+  async with aiohttp.ClientSession() as session:
+    webhook = discord.Webhook.from_url(os.environ['WEBHOOK_URL'], session=session)
+    cur.execute("DELETE FROM giveaways WHERE guild_id = %s;", (str(guild.id),))
+    con.commit()
+    [db_remove(channel) for channel in guild.channels]
+    embed = discord.Embed(title="Бот был кикнут/забанен с сервера", description=f"Данные о нём были стёрты\nУчастников: {guild.member_count}\nID сервера: {guild.id}", color=0x9f0000, timestamp=datetime.now(timezone.utc))
+    if guild.icon:
+      embed.set_footer(icon_url=guild.icon.url, text=guild.name)
+    else:
+      embed.set_footer(text=guild.name)
+    await webhook.send(embed=embed)
 
 @bot.event
 async def on_guild_channel_delete(channel: discord.abc.GuildChannel):
@@ -1656,21 +1655,22 @@ async def on_guild_join(guild: Guild):
       uspeh = True
     except:
       pass
-  Lox = await bot.fetch_channel(logs_channel_id)
-  embed = discord.Embed(title="Бот был добавлен на сервер", color=0x9aff35, description = f"Участников: {guild.member_count}\nID сервера: {guild.id}")
-  user = None
-  try:
-    async for entry in guild.audit_logs(limit=1, action=discord.AuditLogAction.bot_add):
-      user = entry.user
-  except:
-    pass
-  if user:
-    embed.description = f"Добавил: {user.mention} ({user}) с ID: {user.id}\n" + embed.description
-  if guild.icon:
-    embed.set_footer(icon_url=guild.icon.url, text=guild.name)
-  else:
-    embed.set_footer(text=guild.name)
-  await Lox.send(embed=embed)
+  async with aiohttp.ClientSession() as session:
+    webhook = discord.Webhook.from_url(os.environ['WEBHOOK_URL'], session=session)
+    embed = discord.Embed(title="Бот был добавлен на сервер", color=0x9aff35, description = f"Участников: {guild.member_count}\nID сервера: {guild.id}")
+    user = None
+    try:
+      async for entry in guild.audit_logs(limit=1, action=discord.AuditLogAction.bot_add):
+        user = entry.user
+    except:
+      pass
+    if user:
+      embed.description = f"Добавил: {user.mention} ({user}) с ID: {user.id}\n" + embed.description
+    if guild.icon:
+      embed.set_footer(icon_url=guild.icon.url, text=guild.name)
+    else:
+      embed.set_footer(text=guild.name)
+    await webhook.send(embed=embed)
 
 @bot.tree.command(name='баннер', description='Показывает баннер участника')
 @app_commands.describe(member='Выберите участника')
@@ -1760,7 +1760,7 @@ async def logs_cmd(interaction: Interaction, channel: discord.TextChannel=None):
     chperms = channel.permissions_for(interaction.guild.me)
     if not (chperms.read_messages and chperms.send_messages and chperms.read_message_history):
       return await interaction.response.send_message(embed=discord.Embed(title="❌ Ошибка!", color=0xff0000, description="Бот не имеет прав отправлять сообщения в канале и/или просматривать канал и/или читать историю сообщений"), ephemeral=True)
-    cur.execute("INSERT INTO logs (guild_id, channel_id) VALUES(%s, %s);", (str(interaction.guild.id), str(channel.id)))
+    cur.execute("INSERT INTO logs (guild_id, channel_id) VALUES(%s, %s);", (interaction.guild.id, channel.id))
     con.commit()
     return await interaction.response.send_message(embed=discord.Embed(color=0x0ffc03, title="✅ Успешно!", description=f"Логи были включены! Они будут присылаться в {channel.mention}"))
 
@@ -1780,7 +1780,7 @@ async def autopub_cmd(interaction: Interaction):
       chperms = channel.permissions_for(interaction.guild.me)
       if not (chperms.read_messages and chperms.send_messages and chperms.manage_messages and chperms.read_message_history):
         return await interaction.response.send_message(embed=discord.Embed(title="❌ Ошибка!", color=0xff0000, description="Бот не может публиковать сообщения в новостных каналах! Убедитесь, что в каждом новостном канале бот может просматривать сам канал, отправлять сообщения, управлять ими и читать историю сообщений"), ephemeral=True)
-    cur.execute("INSERT INTO autopub (guild_id) VALUES(%s);", (str(interaction.guild.id),))
+    cur.execute("INSERT INTO autopub (guild_id) VALUES(%s);", (interaction.guild.id,))
     con.commit()
     return await interaction.response.send_message(embed=discord.Embed(color=0x0ffc03, title="✅ Успешно!", description=f"Автопубликация включена!"))
 
@@ -2010,7 +2010,7 @@ async def giveaway_create(interaction: Interaction, duration: Transform[str, Dur
   await interaction.response.send_message(embed=discord.Embed(title="🎉 Розыгрыш!", description=f"**Для участия нажимайте на 🎉**\nПриз: {prize}\nПобедителей: {winners}\nЗакончится: <t:{int(duration.timestamp())}:R> (<t:{int(duration.timestamp())}:D>)", color=0x69FF00, timestamp=duration))
   interaction.message = await interaction.original_response()
   await interaction.message.add_reaction('🎉')
-  cur.execute("INSERT INTO giveaways (channel_id, guild_id, message_id, duration, prize, winners) VALUES (%s, %s, %s, %s, %s, %s);", (str(interaction.channel.id), str(interaction.guild.id), str(interaction.message.id), str(int(duration.timestamp())), prize, str(winners)))
+  cur.execute("INSERT INTO giveaways (channel_id, guild_id, message_id, duration, prize, winners) VALUES (%s, %s, %s, %s, %s, %s);", (interaction.channel.id, interaction.guild.id, interaction.message.id, str(int(duration.timestamp())), prize, str(winners)))
   con.commit()
 
 @giveaways_group.command(name="закончить", description="Оканчивает розыгрыш раньше времени")
