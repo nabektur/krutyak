@@ -45,11 +45,11 @@ def mac_address():
     return "%02x:%02x:%02x:%02x:%02x:%02x" % (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
 
 def log_channel(guild_id):
-  cur.execute("SELECT channel_id FROM logs WHERE guild_id = %s", (str(guild_id),))
+  cur.execute("SELECT channel_id FROM logs WHERE guild_id = %s", (guild_id,))
   return cur.fetchone()
 
 def is_autopub(guild_id):
-  cur.execute("SELECT guild_id FROM autopub WHERE guild_id = %s", (str(guild_id),))
+  cur.execute("SELECT guild_id FROM autopub WHERE guild_id = %s", (guild_id,))
   return cur.fetchone() != None
 
 async def mobile(self):
@@ -141,7 +141,7 @@ async def start_zh(key):
   if key[4]:
     duration = datetime.fromtimestamp(int(key[4]), timezone.utc)
     if datetime.now(timezone.utc) >= duration:
-      cur.execute("DELETE FROM spams WHERE channel_id = %s;", (str(channel.id),))
+      cur.execute("DELETE FROM spams WHERE channel_id = %s;", (channel.id,))
       con.commit()
       await channel.send("Спам остановлен по причине длительности! ☑️")
       lchannel = log_channel(channel.guild.id)
@@ -175,13 +175,13 @@ async def on_ready():
 
 @bot.event
 async def on_raw_message_delete(event):
-  cur.execute("DELETE FROM giveaways WHERE message_id = %s;", (str(event.message_id),))
+  cur.execute("DELETE FROM giveaways WHERE message_id = %s;", (event.message_id,))
   con.commit()
 
 @bot.event
 async def on_raw_bulk_message_delete(payload):
   for message_id in payload.message_ids:
-    cur.execute("DELETE FROM giveaways WHERE message_id = %s;", (str(message_id),))
+    cur.execute("DELETE FROM giveaways WHERE message_id = %s;", (message_id,))
     con.commit()
 
 @bot.event
@@ -349,7 +349,7 @@ async def add_message(message: discord.Message):
               cur.execute("INSERT INTO markov_chain (data) VALUES (%s);", (contex_regex,))
               con.commit()
         try:
-          cur.execute("SELECT reply_chance FROM channels_reply WHERE channel_id = %s", (str(message.channel.id),))
+          cur.execute("SELECT reply_chance FROM channels_reply WHERE channel_id = %s", (message.channel.id,))
           if mentioned or random.random() <= float(cur.fetchone()[0]):
             await message.channel.typing()
             phrase = generator.generate_phrase(validators=[validators.chars_count(maximal=2000), validators.words_count(minimal=1)])
@@ -364,13 +364,6 @@ async def add_message(message: discord.Message):
         except:
           pass
 
-def is_blocked(user_id):
-  cur.execute("SELECT id FROM chs WHERE id = %s;", (str(user_id),))
-  if cur.fetchone():
-    return True
-  else:
-    return False 
-
 @bot.event
 async def on_message(message: discord.Message):
       if not message.guild:
@@ -384,10 +377,10 @@ async def on_message(message: discord.Message):
               await message.publish()
             except:
               pass
-      cur.execute("SELECT channel_id FROM channels_likes WHERE channel_id = %s", (str(message.channel.id),))
+      cur.execute("SELECT channel_id FROM channels_likes WHERE channel_id = %s", (message.channel.id,))
       if cur.fetchone():
         if bot.cd_mapping.get_bucket(message).update_rate_limit():
-          cur.execute("DELETE FROM channels_likes WHERE channel_id = %s;", (str(message.channel.id),))
+          cur.execute("DELETE FROM channels_likes WHERE channel_id = %s;", (message.channel.id,))
           con.commit()
           await message.channel.send(embed=discord.Embed(title="⚠️ Внимание! Шкала лайков была отключена!", description="Причина: флуд в канале шкалы", color=0xf59e42))
         else:
@@ -406,9 +399,9 @@ async def on_message(message: discord.Message):
           pass
         return
       if isinstance(message.channel, discord.Thread):
-        cur.execute("SELECT channel_id FROM channels_reply WHERE channel_id = %s", (str(message.channel.parent_id),))
+        cur.execute("SELECT channel_id FROM channels_reply WHERE channel_id = %s", (message.channel.parent_id,))
       else:
-        cur.execute("SELECT channel_id FROM channels_reply WHERE channel_id = %s", (str(message.channel.id),))
+        cur.execute("SELECT channel_id FROM channels_reply WHERE channel_id = %s", (message.channel.id,))
       if cur.fetchone():
         if not message.content.lower().startswith(('$', '&', '%', '€', '¥', '!', '.', '?', '+', '=', '~', '-', '_', 's?', 'L.', 'cp!', 'g.', 'g?', 'pls', ';', "'", 'NQN')):
           await add_message(message)
@@ -417,7 +410,7 @@ async def on_message(message: discord.Message):
 @bot.event
 async def on_thread_create(thread: discord.Thread):
   if isinstance(thread.parent, discord.ForumChannel):
-    cur.execute("SELECT channel_id FROM channels_likes WHERE channel_id = %s", (str(thread.parent.id),))
+    cur.execute("SELECT channel_id FROM channels_likes WHERE channel_id = %s", (thread.parent.id,))
     if cur.fetchone():
       try:
         message = await thread.fetch_message(thread.id)
@@ -1287,10 +1280,10 @@ async def spamt(type, method, channel, webhook, ments=None, duration=None):
   else:
     thread = None
   try:
-    while check_sp(str(channel.id)):
+    while check_sp(channel.id):
       if duration:
         if datetime.now(timezone.utc) >= duration:
-          cur.execute("DELETE FROM spams WHERE channel_id = %s;", (str(channel.id),))
+          cur.execute("DELETE FROM spams WHERE channel_id = %s;", (channel.id,))
           con.commit()
           await channel.send("Спам остановлен по причине длительности! ☑️")
           lchannel = log_channel(channel.guild.id)
@@ -1317,13 +1310,13 @@ async def spamt(type, method, channel, webhook, ments=None, duration=None):
       else:
         await channel.send(content=text)
   except discord.errors.NotFound:
-    cur.execute("DELETE FROM spams WHERE channel_id = %s;", (str(channel.id),))
+    cur.execute("DELETE FROM spams WHERE channel_id = %s;", (channel.id,))
     con.commit()
     return
   except discord.errors.HTTPException:
     await asyncio.sleep(3)
   except (discord.errors.DiscordServerError, aiohttp.client_exceptions.ClientOSError, aiohttp.client_exceptions.ServerDisconnectedError) as e:
-    cur.execute("DELETE FROM spams WHERE channel_id = %s;", (str(channel.id),))
+    cur.execute("DELETE FROM spams WHERE channel_id = %s;", (channel.id,))
     con.commit()
     embed = discord.Embed(title=f'⚠️ Спам остановлен!', color=0xfcb603, timestamp=datetime.now(timezone.utc), description=f'Причина: Ошибка сервера Discord')
     await channel.send(embed=embed)
@@ -1376,7 +1369,7 @@ async def spam_activate(interaction, type, method, channel, duration, mention):
       return await interaction.response.send_message(embed=discord.Embed(title="❌ Ошибка!", color=0xff0000, description="У бота нет права управлять вебхуками для использования этой команды!"), ephemeral=True)
   else:
     webhook = None
-  cur.execute("SELECT channel_id FROM spams WHERE channel_id = %s", (str(channel.id),)) 
+  cur.execute("SELECT channel_id FROM spams WHERE channel_id = %s", (channel.id,)) 
   if cur.fetchone():
     await interaction.response.send_message(embed=discord.Embed(title="❌ Ошибка!", description="Спам уже включён в данном канале!", color=0xff0000), ephemeral=True)
   else:
@@ -1426,10 +1419,10 @@ spam_group = app_commands.Group(name="спам", description="Спам в кан
 async def spam_stop_command(interaction: Interaction, channel: typing.Union[discord.TextChannel, discord.Thread, discord.VoiceChannel]=None):
   if not channel:
     channel = interaction.channel
-  cur.execute("SELECT channel_id FROM spams WHERE channel_id = %s", (str(channel.id),)) 
+  cur.execute("SELECT channel_id FROM spams WHERE channel_id = %s", (channel.id,)) 
   if cur.fetchone():
     await interaction.response.defer()
-    cur.execute("DELETE FROM spams WHERE channel_id = %s;", (str(channel.id),))
+    cur.execute("DELETE FROM spams WHERE channel_id = %s;", (channel.id,))
     con.commit()
     await interaction.followup.send('Спам остановлен! ☑️')
     if not channel == interaction.channel:
@@ -1511,9 +1504,9 @@ async def set_channel(interaction: Interaction, channel: typing.Union[discord.Te
     channel = interaction.channel
   if channel.is_nsfw():
     return await interaction.response.send_message(embed=discord.Embed(title="❌ Ошибка!", color=0xff0000, description="Нельзя установить NSFW канал для ответов бота!"), ephemeral=True)
-  cur.execute("SELECT channel_id FROM channels_reply WHERE channel_id = %s", (str(channel.id),))
+  cur.execute("SELECT channel_id FROM channels_reply WHERE channel_id = %s", (channel.id,))
   if cur.fetchone():
-    cur.execute("DELETE FROM channels_reply WHERE channel_id = %s;", (str(channel.id),))
+    cur.execute("DELETE FROM channels_reply WHERE channel_id = %s;", (channel.id,))
     con.commit()
     await interaction.response.send_message(embed=discord.Embed(description=f"Теперь бот игнорирует сообщения в канале {channel.mention}! ☑️", color=0x43ccfa))
   else:
@@ -1535,9 +1528,9 @@ async def set_channel(interaction: Interaction, channel: typing.Union[discord.Te
 async def set_likes_channel(interaction: Interaction, channel: typing.Union[discord.TextChannel, discord.Thread, discord.VoiceChannel, discord.ForumChannel]=None):
   if not channel:
     channel = interaction.channel
-  cur.execute("SELECT channel_id FROM channels_likes WHERE channel_id = %s", (str(channel.id),))
+  cur.execute("SELECT channel_id FROM channels_likes WHERE channel_id = %s", (channel.id,))
   if cur.fetchone():
-    cur.execute("DELETE FROM channels_likes WHERE channel_id = %s;", (str(channel.id),))
+    cur.execute("DELETE FROM channels_likes WHERE channel_id = %s;", (channel.id,))
     con.commit()
     await interaction.response.send_message(embed=discord.Embed(description=f"Шкала лайков убрана из канала {channel.mention}! ☑️", color=0x43ccfa))
   else:
@@ -1603,15 +1596,15 @@ async def sync(ctx: commands.Context, guild_id: int=None):
   await ctx.send("☑️ Синхронизировано!")
 
 def db_remove(channel):
-  cur.execute("DELETE FROM spams WHERE channel_id = %s;", (str(channel.id),))
-  cur.execute("DELETE FROM giveaways WHERE channel_id = %s;", (str(channel.id),))
+  cur.execute("DELETE FROM spams WHERE channel_id = %s;", (channel.id,))
+  cur.execute("DELETE FROM giveaways WHERE channel_id = %s;", (channel.id,))
   con.commit()
 
 @bot.event
 async def on_guild_remove(guild: Guild):
   async with aiohttp.ClientSession() as session:
     webhook = discord.Webhook.from_url(os.environ['WEBHOOK_URL'], session=session)
-    cur.execute("DELETE FROM giveaways WHERE guild_id = %s;", (str(guild.id),))
+    cur.execute("DELETE FROM giveaways WHERE guild_id = %s;", (guild.id,))
     con.commit()
     [db_remove(channel) for channel in guild.channels]
     embed = discord.Embed(title="Бот был кикнут/забанен с сервера", description=f"Данные о нём были стёрты\nУчастников: {guild.member_count}\nID сервера: {guild.id}", color=0x9f0000, timestamp=datetime.now(timezone.utc))
@@ -1626,8 +1619,8 @@ async def on_guild_channel_delete(channel: discord.abc.GuildChannel):
   guild = channel.guild
   lchannel = log_channel(guild.id)
   db_remove(channel)
-  cur.execute("DELETE FROM channels_reply WHERE channel_id = %s;", (str(channel.id),))
-  cur.execute("DELETE FROM logs WHERE channel_id = %s;", (str(channel.id),))
+  cur.execute("DELETE FROM channels_reply WHERE channel_id = %s;", (channel.id,))
+  cur.execute("DELETE FROM logs WHERE channel_id = %s;", (channel.id,))
   con.commit()
   if lchannel:
     try:
@@ -1753,7 +1746,7 @@ async def logs_cmd(interaction: Interaction, channel: discord.TextChannel=None):
   if not channel:
     channel = interaction.channel
   if log_channel(interaction.guild.id):
-    cur.execute("DELETE FROM logs WHERE guild_id = %s;", (str(interaction.guild.id),))
+    cur.execute("DELETE FROM logs WHERE guild_id = %s;", (interaction.guild.id,))
     con.commit()
     return await interaction.response.send_message(embed=discord.Embed(color=0x0ffc03, title="✅ Успешно!", description="Логи были выключены!"))
   else:
@@ -1769,7 +1762,7 @@ async def logs_cmd(interaction: Interaction, channel: discord.TextChannel=None):
 @app_commands.default_permissions(manage_guild=True)
 async def autopub_cmd(interaction: Interaction):
   if is_autopub(interaction.guild.id):
-    cur.execute("DELETE FROM autopub WHERE guild_id = %s;", (str(interaction.guild.id),))
+    cur.execute("DELETE FROM autopub WHERE guild_id = %s;", (interaction.guild.id,))
     con.commit()
     return await interaction.response.send_message(embed=discord.Embed(color=0x0ffc03, title="✅ Успешно!", description="Автопубликация была выключена!"))
   else:
@@ -2052,7 +2045,7 @@ async def giveaway_end(interaction: Interaction, giveaway: str):
 
 @giveaway_end.autocomplete('giveaway')
 async def giveaway_end_search(interaction: Interaction, current: str):
-  cur.execute("SELECT * FROM giveaways WHERE guild_id = %s;", (str(interaction.guild.id),))
+  cur.execute("SELECT * FROM giveaways WHERE guild_id = %s;", (interaction.guild.id,))
   results = cur.fetchall()
   if current:
     return [Choice(name=f"Приз: {giveaway[4]} (ID сообщения: {giveaway[2]})", value=giveaway[2]) for giveaway in results if giveaway[2].startswith(current) or giveaway[4].startswith(current)]
@@ -2082,7 +2075,7 @@ async def giveaway_delete(interaction: Interaction, giveaway: str):
 
 @giveaway_delete.autocomplete('giveaway')
 async def giveaway_delete_search(interaction: Interaction, current: str):
-  cur.execute("SELECT * FROM giveaways WHERE guild_id = %s;", (str(interaction.guild.id),))
+  cur.execute("SELECT * FROM giveaways WHERE guild_id = %s;", (interaction.guild.id,))
   results = cur.fetchall()
   if current:
     return [Choice(name=f"Приз: {giveaway[4]} (ID сообщения: {giveaway[2]})", value=giveaway[2]) for giveaway in results if giveaway[2].startswith(current) or giveaway[4].startswith(current)]
@@ -2097,7 +2090,7 @@ async def giveaway_delete_error(interaction, error):
 
 @giveaways_group.command(name="список", description="Показывает список розыгрышей")
 async def giveaway_list(interaction: Interaction):
-  cur.execute("SELECT * FROM giveaways WHERE guild_id = %s;", (str(interaction.guild.id),))
+  cur.execute("SELECT * FROM giveaways WHERE guild_id = %s;", (interaction.guild.id,))
   results = cur.fetchall()
   if not results:
     return await interaction.response.send_message(embed=discord.Embed(title="Ошибка! ❌", description="На сервере нет активных розыгрышей!", color=0xff0000), ephemeral=True)
