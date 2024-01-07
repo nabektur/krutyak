@@ -350,7 +350,7 @@ async def add_message(message: discord.Message):
               con.commit()
         try:
           cur.execute("SELECT reply_chance FROM channels_reply WHERE channel_id = %s", (message.channel.id,))
-          if mentioned or random.random() <= float(cur.fetchone()[0]):
+          if mentioned or random.random() <= cur.fetchone()[0]:
             await message.channel.typing()
             phrase = generator.generate_phrase(validators=[validators.chars_count(maximal=2000), validators.words_count(minimal=1)])
             phrase = random.choice([phrase, phrase.upper(), usual_syntax(phrase)])
