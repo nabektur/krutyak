@@ -154,6 +154,12 @@ async def start_zh(key):
   task.name = "Автоспам"
   task.channel_id = channel.id
 
+def update_db():
+  global con, cur
+  con = psycopg2.connect(os.environ.get('DATABASE_URL'), **keepalive_kwargs)
+  cur = con.cursor()
+  logging.info('Бот инициировал новое подключение к базе данных из-за обрыва старого')
+
 @bot.event
 async def on_error(event, *args, **kwargs):
   error = traceback.format_exc()
@@ -161,10 +167,7 @@ async def on_error(event, *args, **kwargs):
     con.rollback()
     logging.info('База данных была откатана из-за ошибки')
   if "psycopg2.InterfaceError" in error:
-    global con, cur
-    con = psycopg2.connect(os.environ.get('DATABASE_URL'), **keepalive_kwargs)
-    cur = con.cursor()
-    logging.info('Бот инициировал новое подключение к базе данных из-за обрыва старого')
+    update_db()
 
 @bot.event
 async def on_ready():
