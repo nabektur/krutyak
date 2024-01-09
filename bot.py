@@ -11,8 +11,8 @@ from discord.app_commands import AppCommandError, Transform, Transformer
 from io import BytesIO
 from mc.builtin.formatters import usual_syntax
 from discord.app_commands import Choice
-from cfg import stexts_ordinary, stexts_nsfw, bot_invite_url, owner_id, guild_id, discord_url
-from discord_logging.handler import DiscordHandler
+from cfg import *
+from dshandler.handler import DiscordHandler
 
 bot = commands.Bot(command_prefix=commands.when_mentioned_or('.'), case_insensitive=True, help_command=None, intents=discord.Intents.all())
 bot.owner_id = owner_id
@@ -77,15 +77,6 @@ async def snipes_update():
   global esnipes, snipes
   esnipes = {}
   snipes = {}
-
-@tasks.loop(seconds=3600)
-async def con_update():
-  global con, cur
-  co1 = con
-  co2 = psycopg2.connect(os.environ.get('DATABASE_URL'), **keepalive_kwargs)
-  cu2 = co2.cursor()
-  con, cur = co2, cu2
-  co1.close()
 
 @tasks.loop(seconds=5)
 async def activity_update():
@@ -165,8 +156,15 @@ async def start_zh(key):
 
 @bot.event
 async def on_error(event, *args, **kwargs):
-  if "psycopg2.errors.InFailedSqlTransaction" in traceback.format_exc():
+  error = traceback.format_exc()
+  if "psycopg2.errors.InFailedSqlTransaction" in error:
     con.rollback()
+    logging.info('База данных была откатана из-за ошибки')
+  if "psycopg2.InterfaceError" in error:
+    global con, cur
+    con = psycopg2.connect(os.environ.get('DATABASE_URL'), **keepalive_kwargs)
+    cur = con.cursor()
+    logging.info('Бот инициировал новое подключение к базе данных из-за обрыва старого')
 
 @bot.event
 async def on_ready():
@@ -174,7 +172,6 @@ async def on_ready():
   cur.execute("select * from spams")
   results = cur.fetchall()
   [await start_zh(key) for key in results]
-  con_update.start()
   activity_update.start()
   snipes_update.start()
 
@@ -1619,7 +1616,7 @@ async def on_guild_remove(guild: Guild):
       embed.set_footer(icon_url=guild.icon.url, text=guild.name)
     else:
       embed.set_footer(text=guild.name)
-    await webhook.send(embed=embed)
+    await webhook.send(embed=embed, username=WEBHOOK_USERNAME, avatar_url=WEBHOOK_AVATAR_URL)
 
 @bot.event
 async def on_guild_channel_delete(channel: discord.abc.GuildChannel):
@@ -1670,7 +1667,7 @@ async def on_guild_join(guild: Guild):
       embed.set_footer(icon_url=guild.icon.url, text=guild.name)
     else:
       embed.set_footer(text=guild.name)
-    await webhook.send(embed=embed)
+    await webhook.send(embed=embed, username=WEBHOOK_USERNAME, avatar_url=WEBHOOK_AVATAR_URL)
 
 @bot.tree.command(name='баннер', description='Показывает баннер участника')
 @app_commands.describe(member='Выберите участника')
@@ -2115,5 +2112,5 @@ bot.tree.add_command(spam_group)
 
 if __name__ == '__main__':
   discord.gateway.DiscordWebSocket.identify = mobile
-  discord.utils.setup_logging(handler=DiscordHandler(service_name="Логи Крутяка", webhook_url=os.environ['WEBHOOK_URL'], avatar_url=f'https://media.discordapp.net/attachments/1172903737250033665/1193445431057862676/43689bd9e44328e1b98b9be9a2e55c65.png'), formatter=logging.Formatter("%(message)s"))
+  discord.utils.setup_logging(handler=DiscordHandler(service_name=WEBHOOK_USERNAME, webhook_url=os.environ['WEBHOOK_URL'], avatar_url=WEBHOOK_AVATAR_URL), formatter=logging.Formatter("%(message)s"))
   bot.run(os.environ['TOKEN'], log_level=logging.ERROR)

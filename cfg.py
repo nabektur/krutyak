@@ -4,3 +4,5 @@ bot_invite_url = "https://discord.com/oauth2/authorize?client_id=113669330482680
 discord_url = "https://discord.gg/dSzT7yG3nd"
 owner_id = 1127953351867383850
 guild_id = 1172865216690802750
+WEBHOOK_USERNAME = 'Логи Крутяка'
+WEBHOOK_AVATAR_URL = 'https://media.discordapp.net/attachments/1172903737250033665/1193445431057862676/43689bd9e44328e1b98b9be9a2e55c65.png'
