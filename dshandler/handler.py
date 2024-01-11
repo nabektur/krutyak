@@ -24,8 +24,8 @@ DEFAULT_EMOJIS = {
     logging.CRITICAL: "🆘",
     logging.ERROR: "❌",
     logging.WARNING: "⚠️",
-    logging.INFO: "",
-    logging.DEBUG: "",
+    logging.INFO: "ℹ️",
+    logging.DEBUG: "⚒️",
 }
 
 
