@@ -156,8 +156,8 @@ async def start_zh(key):
 
 def update_db():
   global con, cur
-  con = psycopg2.connect(os.environ.get('DATABASE_URL'), **keepalive_kwargs)
-  cur = con.cursor()
+  r = psycopg2.connect(os.environ.get('DATABASE_URL'), **keepalive_kwargs)
+  con, cur = r, r.cursor()
   logging.info('Бот инициировал новое подключение к базе данных из-за обрыва старого')
 
 @bot.event
@@ -168,6 +168,7 @@ async def on_error(event, *args, **kwargs):
     logging.info('База данных была откатана из-за ошибки')
   if "psycopg2.InterfaceError" in error:
     update_db()
+  
 
 @bot.event
 async def on_ready():
@@ -2116,4 +2117,4 @@ bot.tree.add_command(spam_group)
 if __name__ == '__main__':
   discord.gateway.DiscordWebSocket.identify = mobile
   discord.utils.setup_logging(handler=DiscordHandler(service_name=WEBHOOK_USERNAME, webhook_url=os.environ['WEBHOOK_URL'], avatar_url=WEBHOOK_AVATAR_URL), formatter=logging.Formatter("%(message)s"))
-  bot.run(os.environ['TOKEN'], log_level=logging.ERROR)
+  bot.run(os.environ['TOKEN'], log_level=logging.INFO)
