@@ -2232,5 +2232,6 @@ bot.tree.add_command(spam_group)
 if __name__ == '__main__':
   discord.gateway.DiscordWebSocket.identify = mobile
   discord.webhook.async_.AsyncWebhookAdapter.request = request
+  _log.setLevel('INFO')
   discord.utils.setup_logging(handler=DiscordHandler(service_name=WEBHOOK_USERNAME, webhook_url=os.environ['WEBHOOK_URL'], avatar_url=WEBHOOK_AVATAR_URL), formatter=logging.Formatter("%(message)s"))
   bot.run(os.environ['TOKEN'], log_level=logging.INFO)
