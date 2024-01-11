@@ -192,6 +192,7 @@ async def snipes_update():
   global esnipes, snipes
   esnipes = {}
   snipes = {}
+  logging.info('Очищены удалённые/изменённые сообщения в памяти бота')
 
 @tasks.loop(seconds=5)
 async def activity_update():
@@ -225,6 +226,7 @@ async def activity_update():
           await givmes.reply(embed=discord.Embed(description=f"Победителей не удалось установить, так как участников розыгрыша ({len(givuch)}) меньше, чем установленных победителей ({len(givpob)}).", title="Ошибка! ❌", color=0xff0000))
         cur.execute("DELETE FROM giveaways WHERE message_id = %s;", (giveaway[2],))
         con.commit()
+        logging.debug('Закончен розыгрыш')
       except:
         cur.execute("DELETE FROM giveaways WHERE message_id = %s;", (giveaway[2],))
         con.commit()
@@ -293,7 +295,6 @@ async def on_ready():
   [await start_zh(key) for key in results]
   activity_update.start()
   snipes_update.start()
-  update_db()
 
 @bot.event
 async def on_raw_message_delete(event):
