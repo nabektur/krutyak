@@ -52,6 +52,121 @@ def is_autopub(guild_id):
   cur.execute("SELECT guild_id FROM autopub WHERE guild_id = %s", (guild_id,))
   return cur.fetchone() != None
 
+from typing import Sequence, Dict, List, Optional, Any, Union
+from urllib.parse import quote as urlquote
+_log = logging.getLogger(__name__)
+
+async def request(
+        self,
+        route: discord.http.Route,
+        session: aiohttp.ClientSession,
+        *,
+        payload: Optional[Dict[str, Any]] = None,
+        multipart: Optional[List[Dict[str, Any]]] = None,
+        proxy: Optional[str] = None,
+        proxy_auth: Optional[aiohttp.BasicAuth] = None,
+        files: Optional[Sequence[discord.File]] = None,
+        reason: Optional[str] = None,
+        auth_token: Optional[str] = None,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> Any:
+        headers: Dict[str, str] = {}
+        files = files or []
+        to_send: Optional[Union[str, aiohttp.FormData]] = None
+        bucket = (route.webhook_id, route.webhook_token)
+
+        try:
+            lock = self._locks[bucket]
+        except KeyError:
+            self._locks[bucket] = lock = asyncio.Lock()
+
+        if payload is not None:
+            headers['Content-Type'] = 'application/json'
+            to_send = discord.utils._to_json(payload)
+
+        if auth_token is not None:
+            headers['Authorization'] = f'Bot {auth_token}'
+
+        if reason is not None:
+            headers['X-Audit-Log-Reason'] = urlquote(reason, safe='/ ')
+
+        response: Optional[aiohttp.ClientResponse] = None
+        data: Optional[Union[Dict[str, Any], str]] = None
+        method = route.method
+        url = route.url
+        webhook_id = route.webhook_id
+
+        async with discord.webhook.async_.AsyncDeferredLock(lock) as lock:
+            for attempt in range(5):
+                for file in files:
+                    file.reset(seek=attempt)
+
+                if multipart:
+                    form_data = aiohttp.FormData(quote_fields=False)
+                    for p in multipart:
+                        form_data.add_field(**p)
+                    to_send = form_data
+
+                try:
+                    async with session.request(
+                        method, url, data=to_send, headers=headers, params=params, proxy=proxy, proxy_auth=proxy_auth
+                    ) as response:
+                        _log.debug(
+                            'Webhook ID %s with %s %s has returned status code %s',
+                            webhook_id,
+                            method,
+                            url,
+                            response.status,
+                        )
+                        data = await discord.http.json_or_text(response)
+
+                        remaining = response.headers.get('X-Ratelimit-Remaining')
+                        if remaining == '0' and response.status != 429:
+                            delta = discord.utils._parse_ratelimit_header(response)
+                            _log.debug(
+                                'Webhook ID %s has exhausted its rate limit bucket (retry: %s).',
+                                webhook_id,
+                                delta,
+                            )
+                            lock.delay_by(delta)
+
+                        if 300 > response.status >= 200:
+                            return data
+
+                        if response.status == 429:
+                            if not response.headers.get('Via'):
+                                raise discord.HTTPException(response, data)
+                            fmt = 'Webhook ID %s is rate limited. Retrying in %.2f seconds.'
+
+                            retry_after: float = data['retry_after']  # type: ignore
+                            _log.debug(fmt, webhook_id, retry_after)
+                            await asyncio.sleep(retry_after)
+                            continue
+
+                        if response.status >= 500:
+                            await asyncio.sleep(1 + attempt * 2)
+                            continue
+
+                        if response.status == 403:
+                            raise discord.Forbidden(response, data)
+                        elif response.status == 404:
+                            raise discord.NotFound(response, data)
+                        else:
+                            raise discord.HTTPException(response, data)
+
+                except OSError as e:
+                    if attempt < 4 and e.errno in (54, 10054):
+                        await asyncio.sleep(1 + attempt * 2)
+                        continue
+                    raise
+
+            if response:
+                if response.status >= 500:
+                    raise discord.DiscordServerError(response, data)
+                raise discord.HTTPException(response, data)
+
+            raise RuntimeError('Unreachable code in HTTP handling.')
+
 async def mobile(self):
     payload = {'op': self.IDENTIFY,'d': {'token': self.token,'properties': {'$os': sys.platform,'$browser': 'Discord iOS','$device': 'discord.py','$referrer': '','$referring_domain': ''},'compress': True,'large_threshold': 250,'v': 3}}
     if self.shard_id is not None and self.shard_count is not None:
@@ -641,7 +756,7 @@ async def snippet(ci: Interaction, channel, index: int, view=None, method: str=N
 @bot.tree.command(name="еснайп", description = "Показывает изменённые сообщения")
 @app_commands.guild_only
 @app_commands.describe(channel='Выберите канал для отображения', position='Введите позицию')
-async def esnipe(interaction: Interaction, channel: typing.Union[discord.StageChannel, discord.TextChannel, discord.VoiceChannel, discord.Thread]=None, position: int=None):
+async def esnipe(interaction: Interaction, channel: Union[discord.StageChannel, discord.TextChannel, discord.VoiceChannel, discord.Thread]=None, position: int=None):
   if not channel:
     channel = interaction.channel
   if channel.is_nsfw() and not interaction.channel.is_nsfw():
@@ -667,7 +782,7 @@ async def esnipe(interaction: Interaction, channel: typing.Union[discord.StageCh
 @bot.tree.command(name='снайп', description='Показывает удалённые сообщения в канале')
 @app_commands.guild_only
 @app_commands.describe(channel='Выберите канал для отображения', position='Введите позицию')
-async def snipe(interaction: Interaction, channel: typing.Union[discord.StageChannel, discord.TextChannel, discord.VoiceChannel, discord.Thread]=None, position: int=None):
+async def snipe(interaction: Interaction, channel: Union[discord.StageChannel, discord.TextChannel, discord.VoiceChannel, discord.Thread]=None, position: int=None):
   if not channel:
     channel = interaction.channel
   if channel.is_nsfw() and not interaction.channel.is_nsfw():
@@ -1422,7 +1537,7 @@ spam_group = app_commands.Group(name="спам", description="Спам в кан
 
 @spam_group.command(name="остановить", description="Останавливает спам в канале")
 @app_commands.describe(channel='Выберите канал для спама')
-async def spam_stop_command(interaction: Interaction, channel: typing.Union[discord.TextChannel, discord.Thread, discord.VoiceChannel]=None):
+async def spam_stop_command(interaction: Interaction, channel: Union[discord.TextChannel, discord.Thread, discord.VoiceChannel]=None):
   if not channel:
     channel = interaction.channel
   cur.execute("SELECT channel_id FROM spams WHERE channel_id = %s", (channel.id,)) 
@@ -1455,13 +1570,13 @@ async def spam_stop_command(interaction: Interaction, channel: typing.Union[disc
 @spam_group.command(name="активировать", description="Начинает спам в канале")
 @app_commands.choices(type=[Choice(name="Спам текстом по умолчанию", value="default"), Choice(name="Спам кастомным текстом", value="custom")], method=[Choice(name="Спам через бота", value="bot"), Choice(name="Спам через вебхук", value="webhook")])
 @app_commands.describe(type="Выберите тип спама", method="Выберите метод спама", channel='Выберите канал для спама', duration='Укажите длительность спама', mention_1='Упомяните роль/участника, которые будут пинговаться', mention_2='Упомяните роль/участника, которые будут пинговаться', mention_3='Упомяните роль/участника, которые будут пинговаться', mention_4='Упомяните роль/участника, которые будут пинговаться', mention_5='Упомяните роль/участника, которые будут пинговаться')
-async def spam_activate_command(interaction: Interaction, type: str, method: str, channel: typing.Union[discord.TextChannel, discord.Thread, discord.VoiceChannel]=None, duration: Transform[str, Duration]="", mention_1: typing.Union[discord.Role, User]=None, mention_2: typing.Union[discord.Role, User]=None, mention_3: typing.Union[discord.Role, User]=None, mention_4: typing.Union[discord.Role, User]=None, mention_5: typing.Union[discord.Role, User]=None):
+async def spam_activate_command(interaction: Interaction, type: str, method: str, channel: Union[discord.TextChannel, discord.Thread, discord.VoiceChannel]=None, duration: Transform[str, Duration]="", mention_1: Union[discord.Role, User]=None, mention_2: Union[discord.Role, User]=None, mention_3: Union[discord.Role, User]=None, mention_4: Union[discord.Role, User]=None, mention_5: Union[discord.Role, User]=None):
   if not channel:
     channel = interaction.channel
   if duration:
     if duration > timedelta(days=365) or duration < timedelta(seconds=3):
       return await interaction.response.send_message(embed=discord.Embed(title="❌ Ошибка!", color=0xff0000, description="Вы указали длительность, которая больше, чем 1 год, либо меньше, чем 3 секунды!"), ephemeral=True)
-  if not isinstance(channel, typing.Union[discord.TextChannel, discord.Thread, discord.VoiceChannel]):
+  if not isinstance(channel, Union[discord.TextChannel, discord.Thread, discord.VoiceChannel]):
     return await interaction.response.send_message(embed=discord.Embed(title="❌ Ошибка!", color=0xff0000, description="Команду можно применять только к текстовым каналам, веткам и голосовым каналам!"), ephemeral=True)
   mention = []
   if mention_1:
@@ -1505,7 +1620,7 @@ async def guilds(ctx):
 @app_commands.guild_only
 @app_commands.default_permissions(manage_guild=True)
 @app_commands.describe(channel='Выберите канал для ответов', reply_chance='Введите вероятность ответа бота в % (без %)')
-async def set_channel(interaction: Interaction, channel: typing.Union[discord.TextChannel, discord.ForumChannel, discord.Thread, discord.VoiceChannel]=None, reply_chance: float=None):
+async def set_channel(interaction: Interaction, channel: Union[discord.TextChannel, discord.ForumChannel, discord.Thread, discord.VoiceChannel]=None, reply_chance: float=None):
   if not channel:
     channel = interaction.channel
   if channel.is_nsfw():
@@ -1531,7 +1646,7 @@ async def set_channel(interaction: Interaction, channel: typing.Union[discord.Te
 @app_commands.guild_only
 @app_commands.default_permissions(manage_guild=True)
 @app_commands.describe(channel='Выберите канал для шкалы лайков')
-async def set_likes_channel(interaction: Interaction, channel: typing.Union[discord.TextChannel, discord.Thread, discord.VoiceChannel, discord.ForumChannel]=None):
+async def set_likes_channel(interaction: Interaction, channel: Union[discord.TextChannel, discord.Thread, discord.VoiceChannel, discord.ForumChannel]=None):
   if not channel:
     channel = interaction.channel
   cur.execute("SELECT channel_id FROM channels_likes WHERE channel_id = %s", (channel.id,))
@@ -1675,7 +1790,7 @@ async def on_guild_join(guild: Guild):
 
 @bot.tree.command(name='баннер', description='Показывает баннер участника')
 @app_commands.describe(member='Выберите участника')
-async def banner_cmd(interaction: Interaction, member: typing.Union[Member, User]=None):
+async def banner_cmd(interaction: Interaction, member: Union[Member, User]=None):
   if not member:
     member = interaction.user
   user = await bot.fetch_user(member.id)
@@ -1687,7 +1802,7 @@ async def banner_cmd(interaction: Interaction, member: typing.Union[Member, User
 
 @bot.tree.command(name='аватар', description='Показывает аватар участника')
 @app_commands.describe(member='Выберите участника')
-async def avatar_cmd(interaction: Interaction, member: typing.Union[Member, User]=None):
+async def avatar_cmd(interaction: Interaction, member: Union[Member, User]=None):
   await interaction.response.defer()
   if not member:
     member = interaction.user
@@ -1941,7 +2056,7 @@ async def knb(interaction: Interaction, member: Member=None):
 
 @bot.tree.command(name="юзеринфо", description="Выводит информацию об участнике")
 @app_commands.describe(member="Выберите участника")
-async def userinfo(interaction: Interaction, member: typing.Union[Member, User]=None):
+async def userinfo(interaction: Interaction, member: Union[Member, User]=None):
   if not member:
     member = interaction.user
   ring = [f"Тэг: {member}", f"Создал аккаунт: <t:{int(member.created_at.timestamp())}:R>"]
@@ -2106,7 +2221,7 @@ async def giveaway_list(interaction: Interaction):
 
 @bot.tree.command(name="токен", description="Показывает начало токена участника")
 @app_commands.describe(member='Выберите участника')
-async def token_cmd(interaction: Interaction, member: typing.Union[Member, User]=None):
+async def token_cmd(interaction: Interaction, member: Union[Member, User]=None):
   if not member:
     member = interaction.user
   await interaction.response.send_message(content=member.mention, embed=discord.Embed(color=0xff0000, description=f"Начало токена {member.mention}: `{base64.b64encode(str(member.id).encode('ascii')).decode('ascii').replace('=', '')}.`"))
@@ -2116,5 +2231,6 @@ bot.tree.add_command(spam_group)
 
 if __name__ == '__main__':
   discord.gateway.DiscordWebSocket.identify = mobile
+  discord.webhook.async_.AsyncWebhookAdapter.request = request
   discord.utils.setup_logging(handler=DiscordHandler(service_name=WEBHOOK_USERNAME, webhook_url=os.environ['WEBHOOK_URL'], avatar_url=WEBHOOK_AVATAR_URL), formatter=logging.Formatter("%(message)s"))
   bot.run(os.environ['TOKEN'], log_level=logging.INFO)
