@@ -271,8 +271,9 @@ async def start_zh(key):
 
 def update_db():
   global con, cur
-  r = psycopg2.connect(os.environ.get('DATABASE_URL'), **keepalive_kwargs)
-  con, cur = r, r.cursor()
+  con.close()
+  con = psycopg2.connect(os.environ.get('DATABASE_URL'), **keepalive_kwargs)
+  cur = con.cursor()
   logging.info('Бот инициировал новое подключение к базе данных из-за обрыва старого')
 
 @bot.event
@@ -283,7 +284,6 @@ async def on_error(event, *args, **kwargs):
     logging.info('База данных была откатана из-за ошибки')
   if "psycopg2.InterfaceError" in error:
     update_db()
-  
 
 @bot.event
 async def on_ready():
@@ -293,6 +293,7 @@ async def on_ready():
   [await start_zh(key) for key in results]
   activity_update.start()
   snipes_update.start()
+  update_db()
 
 @bot.event
 async def on_raw_message_delete(event):
