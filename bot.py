@@ -19,13 +19,7 @@ bot.owner_id = owner_id
 bot.cd_mapping = commands.CooldownMapping.from_cooldown(10, 10, commands.BucketType.member)
 snipes = {}
 esnipes = {}
-keepalive_kwargs = {
-    "keepalives": 1,
-    "keepalives_idle": 30,
-    "keepalives_interval": 5,
-    "keepalives_count": 5,
-}
-con = psycopg2.connect(os.environ.get('DATABASE_URL'), **keepalive_kwargs)
+con = psycopg2.connect(os.environ.get('DATABASE_URL'))
 cur = con.cursor()
 cur.execute("SELECT * FROM markov_chain;")
 generator = mc.PhraseGenerator(samples=[r[0] for r in cur.fetchall()])
@@ -271,21 +265,12 @@ async def start_zh(key):
   task.name = "Автоспам"
   task.channel_id = channel.id
 
-def update_db():
-  global con, cur
-  con.close()
-  con = psycopg2.connect(os.environ.get('DATABASE_URL'), **keepalive_kwargs)
-  cur = con.cursor()
-  logging.info('Бот инициировал новое подключение к базе данных из-за обрыва старого')
-
 @bot.event
 async def on_error(event, *args, **kwargs):
   error = traceback.format_exc()
   if "psycopg2.errors.InFailedSqlTransaction" in error:
     con.rollback()
     logging.info('База данных была откатана из-за ошибки')
-  if "psycopg2.InterfaceError" in error:
-    update_db()
 
 @bot.event
 async def on_ready():
