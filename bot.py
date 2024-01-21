@@ -271,6 +271,8 @@ async def on_error(event, *args, **kwargs):
   if "psycopg2.errors.InFailedSqlTransaction" in error:
     con.rollback()
     logging.info('База данных была откатана из-за ошибки')
+    return
+  logging.error(error)
 
 @bot.event
 async def on_ready():
