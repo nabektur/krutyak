@@ -12,7 +12,7 @@ from io import BytesIO
 from mc.builtin.formatters import usual_syntax
 from discord.app_commands import Choice
 from cfg import *
-from dshandler.handler import DiscordHandler
+from discord_logging.handler import DiscordHandler
 
 bot = commands.Bot(command_prefix=commands.when_mentioned_or('.'), case_insensitive=True, help_command=None, intents=discord.Intents.all())
 bot.owner_id = owner_id
@@ -2220,5 +2220,5 @@ if __name__ == '__main__':
   discord.gateway.DiscordWebSocket.identify = mobile
   discord.webhook.async_.AsyncWebhookAdapter.request = request
   _log.setLevel('INFO')
-  discord.utils.setup_logging(handler=DiscordHandler(service_name=WEBHOOK_USERNAME, webhook_url=os.environ['WEBHOOK_URL'], avatar_url=WEBHOOK_AVATAR_URL), formatter=logging.Formatter("%(message)s"))
+  discord.utils.setup_logging(handler=DiscordHandler(service_name=WEBHOOK_USERNAME, webhook_url=os.environ.get('WEBHOOK_URL'), avatar_url=WEBHOOK_AVATAR_URL), formatter=logging.Formatter("%(message)s"))
   bot.run(os.environ['TOKEN'], log_level=logging.INFO)

@@ -6,4 +6,4 @@ psycopg2
 discord.py[speed]
 mc.py
 requests
-discord-webhook
+python-logging-discord-handler
