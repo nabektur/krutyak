@@ -1,20 +1,17 @@
 on: push
-name: Deploy to Hosting
-
+name: deploy
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
-
-      - name: Deploy to Hosting
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      - name: Деплой
+        uses: pressidium/lftp-mirror-action@v1
+      
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          port: ${{ secrets.FTP_PORT }}
-          timeout: 3600000
-          server-dir:  /root/krutyak/
+          host: ${{ secrets.SFTP_URL }}
+          port: ${{ secrets.SFTP_PORT }}
+          user: ${{ secrets.SFTP_USER }}
+          pass: ${{ secrets.SFTP_PASSWORD }}
+          localDir: '.'
+          remoteDir: './krutyak'
+          reverse: true
