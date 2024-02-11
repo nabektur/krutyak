@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# ж
 import ipaddress, asyncio, os, discord, random, traceback, sys, mc, typing, psycopg2, re, ast, platform, aiohttp, requests, logging, base64
 from discord.ext import commands, tasks
 from faker import Faker
