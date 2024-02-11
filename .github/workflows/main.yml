@@ -1,17 +1,19 @@
-on: push
-name: deploy
+on: [push]
+
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Деплой
-        uses: pressidium/lftp-mirror-action@v1
-      
+    deploy_job:
+      runs-on: ubuntu-latest
+      name: deploy
+      steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Deploy file
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
         with:
-          host: ${{ secrets.SFTP_URL }}
-          port: ${{ secrets.SFTP_PORT }}
-          user: ${{ secrets.SFTP_USER }}
-          pass: ${{ secrets.SFTP_PASSWORD }}
-          localDir: '.'
-          remoteDir: './root/krutyak'
-          reverse: true
+            username: ${{ secrets.SFTP_USER }}
+            server: ${{ secrets.SFTP_URL }}
+            port: ${{ secrets.SFTP_PORT }}
+            local_path: '.'
+            remote_path: '/root/krutyak'
+            sftp_only: true
+            password: ${{ secrets.FTP_PASSWORD }}
