@@ -1,8 +1,5 @@
+on: push
 name: Deploy to Hosting
-on:
-  push:
-    branches:
-      - master
 
 jobs:
   deploy:
