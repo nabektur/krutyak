@@ -16,4 +16,4 @@ jobs:
             local_path: '.'
             remote_path: '/root/krutyak'
             sftp_only: true
-            password: ${{ secrets.FTP_PASSWORD }}
+            password: ${{ secrets.SFTP_PASSWORD }}
