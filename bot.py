@@ -19,7 +19,7 @@ bot.owner_id = owner_id
 bot.cd_mapping = commands.CooldownMapping.from_cooldown(10, 10, commands.BucketType.member)
 snipes = {}
 esnipes = {}
-con = psycopg2.connect(os.environ.get('DATABASE_URL'))
+con = psycopg2.connect(database='postgres', user='postgres', host='localhost', password=os.environ['DBPASS'])
 cur = con.cursor()
 cur.execute("SELECT * FROM markov_chain;")
 generator = mc.PhraseGenerator(samples=[r[0] for r in cur.fetchall()])
