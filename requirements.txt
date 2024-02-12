@@ -7,3 +7,4 @@ discord.py[speed]
 mc.py
 requests
 python-logging-discord-handler
+python-dotenv

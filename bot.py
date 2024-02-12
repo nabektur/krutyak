@@ -15,7 +15,9 @@ from mc.builtin.formatters import usual_syntax
 from discord.app_commands import Choice
 from cfg import *
 from discord_logging.handler import DiscordHandler
+from dotenv import load_dotenv
 
+load_dotenv()
 bot = commands.Bot(command_prefix=commands.when_mentioned_or('.'), case_insensitive=True, help_command=None, intents=discord.Intents.all())
 bot.owner_id = owner_id
 bot.cd_mapping = commands.CooldownMapping.from_cooldown(10, 10, commands.BucketType.member)
